@@ -21,18 +21,7 @@ spec:
       - name: satellites
         image: gcr.io/nlc-bot-36685/alpha-satellites
         imagePullPolicy: Always
-        env:
-          - name: PRODUCTION_MODE
-            value: "1"
-          - name: IS_FREE
-            value: "1"
         volumeMounts:
-          - name: alpha-service-keys
-            mountPath: /run/secrets/alpha-service
-            readOnly: true
-          - name: alpha-satellite-keys
-            mountPath: /run/secrets/alpha-satellites
-            readOnly: true
           - name: google-cloud-auth
             mountPath: /run/secrets/google-cloud-auth
             readOnly: true
@@ -40,21 +29,24 @@ spec:
           requests:
             memory: "125Mi"
             cpu: "8m"
+        env: 
+          - name: PRODUCTION_MODE
+            value: "1"
+          - name: IS_FREE
+            value: "1"
+          - name: ID_751080770243657779
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_751080770243657779
+          - name: ID_751080162300526653
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_751080162300526653
         ports:
           - containerPort: 6911
       volumes:
-        - name: alpha-service-keys
-          secret:
-            secretName: alpha-service-keys
-            items:
-              - key: credentials
-                path: key
-        - name: alpha-satellite-keys
-          secret:
-            secretName: alpha-satellite-keys
-            items:
-              - key: satellites
-                path: key
         - name: google-cloud-auth
           secret:
             secretName: google-cloud-auth
