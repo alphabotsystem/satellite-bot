@@ -28,7 +28,7 @@ jobs:
     # Configure Docker to use the gcloud command-line tool as a credential
     # helper for authentication
     - run: |-
-        gcloud --quiet auth configure-docker
+        gcloud --quiet auth configure-docker europe-west4-docker.pkg.dev
 
     # Get the GKE credentials so we can deploy to the cluster
     - uses: google-github-actions/get-gke-credentials@v0.2.1
@@ -40,13 +40,13 @@ jobs:
     # Build the Docker image
     - name: Build
       run: |-
-        docker image build -t gcr.io/$PROJECT_ID/alpha-satellites -f ./build/dockerfile ./
+        docker image build -t europe-west4-docker.pkg.dev/$PROJECT_ID/alpha-bot/satellite -f ./build/dockerfile ./
 
     # Push the Docker image to Google Container Registry
     - name: Publish
       run: |-
-        gcloud container images delete gcr.io/$PROJECT_ID/alpha-satellites || :
-        docker push "gcr.io/$PROJECT_ID/alpha-satellites"
+        gcloud artifacts docker images delete europe-west4-docker.pkg.dev/$PROJECT_ID/alpha-bot/satellite || :
+        docker push europe-west4-docker.pkg.dev/$PROJECT_ID/alpha-bot/satellite
     # Deploy the Docker image to the GKE cluster
     - name: Deploy
       run: |-
