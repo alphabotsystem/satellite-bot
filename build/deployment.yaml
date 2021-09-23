@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: satellites
-        image: gcr.io/nlc-bot-36685/alpha-satellites
+        image: europe-west4-docker.pkg.dev/nlc-bot-36685/alpha-bot/satellite
         imagePullPolicy: Always
         volumeMounts:
           - name: google-cloud-auth
