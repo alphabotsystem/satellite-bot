@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: satellite-development
+  labels:
+    app: satellites
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: satellites
+  serviceName: "satellite"
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: satellites
+    spec:
+      containers:
+      - name: satellites
+        image: alphabotsystem/alpha-satellites
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - name: alpha-service-keys
+            mountPath: /run/secrets/alpha-service
+            readOnly: true
+          - name: alpha-satellite-keys
+            mountPath: /run/secrets/alpha-satellites
+            readOnly: true
+          - name: google-cloud-auth
+            mountPath: /run/secrets/google-cloud-auth
+            readOnly: true
+        ports:
+          - containerPort: 6911
+      volumes:
+        - name: alpha-service-keys
+          secret:
+            secretName: alpha-service-keys
+            items:
+              - key: credentials
+                path: key
+        - name: alpha-satellite-keys
+          secret:
+            secretName: alpha-satellite-keys
+            items:
+              - key: satellites
+                path: key
+        - name: google-cloud-auth
+          secret:
+            secretName: google-cloud-auth
+            items:
+              - key: gcloud_credentials.json
+                path: key
