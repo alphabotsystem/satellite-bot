@@ -6,7 +6,7 @@ metadata:
   labels:
     app: satellites
 spec:
-  replicas: 89
+  replicas: 86
   selector:
     matchLabels:
       app: satellites
@@ -217,11 +217,6 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_787004889019580436
-          - name: ID_787707381781626940
-            valueFrom:
-              secretKeyRef:
-                name: alpha-satellite-tokens
-                key: ID_787707381781626940
           - name: ID_787714760074199080
             valueFrom:
               secretKeyRef:
@@ -257,11 +252,6 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_799586605106331719
-          - name: ID_799600754235015240
-            valueFrom:
-              secretKeyRef:
-                name: alpha-satellite-tokens
-                key: ID_799600754235015240
           - name: ID_799600802322186281
             valueFrom:
               secretKeyRef:
@@ -472,11 +462,6 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_842401422087553115
-          - name: ID_842438962172919840
-            valueFrom:
-              secretKeyRef:
-                name: alpha-satellite-tokens
-                key: ID_842438962172919840
         ports:
           - containerPort: 6911
       volumes:
