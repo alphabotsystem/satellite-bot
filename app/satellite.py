@@ -11,7 +11,7 @@ from asyncio import CancelledError, sleep
 from traceback import format_exc
 
 from discord import AutoShardedBot, Embed, Intents, Activity, Status, ActivityType
-from google.cloud.firestore import AsyncClient as FirestoreAsnycClient
+from google.cloud.firestore import AsyncClient as FirestoreAsyncClient
 from google.cloud.error_reporting import Client as ErrorReportingClient
 
 from helpers.utils import Utils
@@ -23,7 +23,7 @@ from Processor import Processor
 from MessageRequest import MessageRequest
 
 
-database = FirestoreAsnycClient()
+database = FirestoreAsyncClient()
 logging = ErrorReportingClient(service="satellites")
 
 
