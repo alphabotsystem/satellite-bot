@@ -12,6 +12,7 @@ from traceback import format_exc
 
 from discord import AutoShardedBot, Embed, Intents, Activity, Status, ActivityType
 from google.cloud.firestore import AsyncClient as FirestoreAsyncClient
+from google.cloud.firestore import ArrayUnion, ArrayRemove
 from google.cloud.error_reporting import Client as ErrorReportingClient
 
 from helpers.utils import Utils
