@@ -76,17 +76,29 @@ async def update_properties():
 		print(format_exc())
 		if environ["PRODUCTION_MODE"]: logging.report_exception()
 
+async def update_ticker():
+	global request
+	try:
+		outputMessage, request = await Processor.process_quote_arguments(MessageRequest(), [] if exchange is None else [exchange], tickerId=tickerId, platformQueue=[platform])
+		if outputMessage is not None:
+			print("Parsing failed:", outputMessage)
+			print(request)
+			return False
+		return True
+	except CancelledError: return
+	except Exception:
+		print(format_exc())
+		if environ["PRODUCTION_MODE"]: logging.report_exception()
+
 async def update_nicknames():
 	global updatingNickname
 	try:
 		updatingNickname = True
 		await sleep(timeOffset)
 
-		outputMessage, request = await Processor.process_quote_arguments(MessageRequest(), [] if exchange is None else [exchange], tickerId=tickerId, platformQueue=[platform])
-		if outputMessage is not None:
-			print("Parsing failed:", outputMessage)
-			print(request)
-			return
+		if request is None:
+			success = await update_ticker()
+			if not success: return
 
 		try: payload, quoteText = await Processor.process_task("quote", bot.user.id, request)
 		except: pass
@@ -170,6 +182,7 @@ async def job_queue():
 			if refreshRate in timeframes and not updatingNickname:
 				bot.loop.create_task(update_nicknames())
 			if "1H" in timeframes:
+				bot.loop.create_task(update_ticker())
 				bot.loop.create_task(update_properties())
 
 		except CancelledError: return
@@ -186,6 +199,7 @@ accountProperties = DatabaseConnector(mode="account")
 guildProperties = DatabaseConnector(mode="guild")
 Processor.clientId = b"discord_satellite"
 
+request = None
 updatingNickname = False
 timeOffset = randint(0, 600) / 10.0
 platform, exchange, tickerId = constants.configuration[constants.satellites[satelliteId]]
