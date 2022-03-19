@@ -76,9 +76,13 @@ async def update_properties():
 		print(format_exc())
 		if environ["PRODUCTION_MODE"]: logging.report_exception()
 
-async def update_ticker():
+async def update_ticker(force=False):
 	global request
 	try:
+		if not force:
+			# Make the request at random in order not to stress the parsing server too much
+			await sleep(randint(0, 3600))
+
 		outputMessage, request = await Processor.process_quote_arguments(MessageRequest(), [] if exchange is None else [exchange], tickerId=tickerId, platformQueue=[platform])
 		if outputMessage is not None:
 			print("Parsing failed:", outputMessage)
@@ -97,7 +101,7 @@ async def update_nicknames():
 		await sleep(timeOffset)
 
 		if request is None:
-			success = await update_ticker()
+			success = await update_ticker(force=True)
 			if not success: return
 
 		try: payload, quoteText = await Processor.process_task("quote", bot.user.id, request)
@@ -182,8 +186,8 @@ async def job_queue():
 			if refreshRate in timeframes and not updatingNickname:
 				bot.loop.create_task(update_nicknames())
 			if "1H" in timeframes:
-				bot.loop.create_task(update_ticker())
 				bot.loop.create_task(update_properties())
+				bot.loop.create_task(update_ticker())
 
 		except CancelledError: return
 		except Exception:
