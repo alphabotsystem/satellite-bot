@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:latest
 
 # Make a directory for the service
 WORKDIR /usr/src/satellites
