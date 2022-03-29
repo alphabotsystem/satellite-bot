@@ -100,14 +100,14 @@ async def update_nicknames():
 		updatingNickname = True
 		await sleep(timeOffset)
 
-		if request is None:
+		if request is None or len(request.get("platforms", [])) == 0:
 			success = await update_ticker(force=True)
 			if not success: return
 
 		try: payload, quoteText = await Processor.process_task("quote", bot.user.id, request)
 		except: pass
 		if payload is None or "quotePrice" not in payload:
-			print("Something wen't wrong when fetching the price:", bot.user.id, quoteText)
+			print("Something went wrong when fetching the price:", bot.user.id, quoteText)
 			print(payload)
 			return
 
