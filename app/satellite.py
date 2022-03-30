@@ -21,7 +21,7 @@ from helpers import constants
 from DatabaseConnector import DatabaseConnector
 from Processor import Processor
 
-from MessageRequest import MessageRequest
+from CommandRequest import CommandRequest
 
 
 database = FirestoreAsyncClient()
@@ -83,7 +83,7 @@ async def update_ticker(force=False):
 			# Make the request at random in order not to stress the parsing server too much
 			await sleep(randint(0, 3600))
 
-		outputMessage, request = await Processor.process_quote_arguments(MessageRequest(), [] if exchange is None else [exchange], tickerId=tickerId, platformQueue=[platform])
+		outputMessage, request = await Processor.process_quote_arguments(CommandRequest(), [] if exchange is None else [exchange], tickerId=tickerId, platformQueue=[platform])
 		if outputMessage is not None:
 			print("Parsing failed:", outputMessage)
 			print(request)
