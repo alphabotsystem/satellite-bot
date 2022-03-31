@@ -10,7 +10,8 @@ from pytz import utc
 from asyncio import CancelledError, sleep
 from traceback import format_exc
 
-from discord import AutoShardedBot, Embed, Intents, Activity, Status, ActivityType
+from discord import AutoShardedClient, Embed, Intents, Activity, Status, ActivityType
+from discord.ext import tasks
 from google.cloud.firestore import AsyncClient as FirestoreAsyncClient
 from google.cloud.firestore import ArrayUnion, ArrayRemove
 from google.cloud.error_reporting import Client as ErrorReportingClient
@@ -29,13 +30,29 @@ logging = ErrorReportingClient(service="satellites")
 
 
 # -------------------------
+# Task setup
+# -------------------------
+
+request = None
+updatingNickname = False
+timeOffset = randint(0, 600) / 10.0
+platform, exchange, tickerId = constants.configuration[constants.satellites[satelliteId]]
+isFree = platform == "CoinGecko" and exchange is None and tickerId in ["BTCUSD", "ETHUSD"]
+
+isPremium = tickerId in ["EURUSD", "GBPUSD", "AUDJPY", "AUDUSD", "EURJPY", "GBPJPY", "NZDJPY", "NZDUSD", "CADUSD", "JPYUSD", "ZARUSD"]
+if isPremium and len(bot.guilds) < 15: refreshRate = 60.0
+elif platform == "CCXT": refreshRate = 1.0
+else: refreshRate = 5.0
+refreshRate = 1.0
+
+# -------------------------
 # Initialization
 # -------------------------
 
 intents = Intents.none()
 intents.guilds = True
 
-bot = AutoShardedBot(intents=intents, status=Status.idle, activity=None)
+bot = AutoShardedClient(intents=intents, status=Status.idle, activity=None)
 
 
 # -------------------------
@@ -59,6 +76,7 @@ async def on_guild_remove(guild):
 # Job functions
 # -------------------------
 
+@tasks.loop(minutes=60.0)
 async def update_properties():
 	try:
 		satelliteRef = database.document("dataserver/configuration/satellites/{}".format(bot.user.id))
@@ -76,6 +94,7 @@ async def update_properties():
 		print(format_exc())
 		if environ["PRODUCTION_MODE"]: logging.report_exception()
 
+@tasks.loop(minutes=60.0)
 async def update_ticker(force=False):
 	global request
 	try:
@@ -83,7 +102,7 @@ async def update_ticker(force=False):
 			# Make the request at random in order not to stress the parsing server too much
 			await sleep(randint(0, 3600))
 
-		outputMessage, request = await Processor.process_quote_arguments(CommandRequest(), [] if exchange is None else [exchange], tickerId=tickerId, platformQueue=[platform])
+		outputMessage, request = await Processor.process_quote_arguments(CommandRequest(), [] if exchange is None else [exchange], [platform], tickerId=tickerId)
 		if outputMessage is not None:
 			print("Parsing failed:", outputMessage)
 			print(request)
@@ -94,9 +113,11 @@ async def update_ticker(force=False):
 		print(format_exc())
 		if environ["PRODUCTION_MODE"]: logging.report_exception()
 
+@tasks.loop(minutes=refreshRate)
 async def update_nicknames():
 	global updatingNickname
 	try:
+		print("!")
 		updatingNickname = True
 		await sleep(timeOffset)
 
@@ -167,35 +188,6 @@ async def update_nickname(guild, nickname):
 
 
 # -------------------------
-# Job queue
-# -------------------------
-
-async def job_queue():
-	while True:
-		try:
-			await sleep(Utils.seconds_until_cycle())
-			t = datetime.now().astimezone(utc)
-			timeframes = Utils.get_accepted_timeframes(t)
-
-			isPremium = tickerId in ["EURUSD", "GBPUSD", "AUDJPY", "AUDUSD", "EURJPY", "GBPJPY", "NZDJPY", "NZDUSD", "CADUSD", "JPYUSD", "ZARUSD"]
-			if len(bot.guilds) == 1: refreshRate = "8H"
-			elif isPremium and len(bot.guilds) < 15: refreshRate = "1H"
-			elif platform == "CCXT": refreshRate = "1m"
-			else: refreshRate = "5m"
-
-			if refreshRate in timeframes and not updatingNickname:
-				bot.loop.create_task(update_nicknames())
-			if "1H" in timeframes:
-				bot.loop.create_task(update_properties())
-				bot.loop.create_task(update_ticker())
-
-		except CancelledError: return
-		except Exception:
-			print(format_exc())
-			if environ["PRODUCTION_MODE"]: logging.report_exception()
-
-
-# -------------------------
 # Startup
 # -------------------------
 
@@ -203,14 +195,12 @@ accountProperties = DatabaseConnector(mode="account")
 guildProperties = DatabaseConnector(mode="guild")
 Processor.clientId = b"discord_satellite"
 
-request = None
-updatingNickname = False
-timeOffset = randint(0, 600) / 10.0
-platform, exchange, tickerId = constants.configuration[constants.satellites[satelliteId]]
-isFree = platform == "CoinGecko" and exchange is None and tickerId in ["BTCUSD", "ETHUSD"]
-
 @bot.event
 async def on_ready():
+	update_properties.start()
+	update_ticker.start()
+	update_nicknames.start()
+
 	print("[Startup]: Alpha Satellite is online")
 
 
@@ -218,6 +208,5 @@ async def on_ready():
 # Login
 # -------------------------
 
-bot.loop.create_task(job_queue())
 token = environ["ID_{}".format(constants.satellites[satelliteId])]
-bot.loop.run_until_complete(bot.start(token))
+bot.run(token)
