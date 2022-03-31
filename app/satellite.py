@@ -30,6 +30,16 @@ logging = ErrorReportingClient(service="satellites")
 
 
 # -------------------------
+# Initialization
+# -------------------------
+
+intents = Intents.none()
+intents.guilds = True
+
+bot = AutoShardedClient(intents=intents, status=Status.idle, activity=None)
+
+
+# -------------------------
 # Task setup
 # -------------------------
 
@@ -40,19 +50,8 @@ platform, exchange, tickerId = constants.configuration[constants.satellites[sate
 isFree = platform == "CoinGecko" and exchange is None and tickerId in ["BTCUSD", "ETHUSD"]
 
 isPremium = tickerId in ["EURUSD", "GBPUSD", "AUDJPY", "AUDUSD", "EURJPY", "GBPJPY", "NZDJPY", "NZDUSD", "CADUSD", "JPYUSD", "ZARUSD"]
-if isPremium and len(bot.guilds) < 15: refreshRate = 60.0
-elif platform == "CCXT": refreshRate = 1.0
+if platform == "CCXT": refreshRate = 1.0
 else: refreshRate = 5.0
-refreshRate = 1.0
-
-# -------------------------
-# Initialization
-# -------------------------
-
-intents = Intents.none()
-intents.guilds = True
-
-bot = AutoShardedClient(intents=intents, status=Status.idle, activity=None)
 
 
 # -------------------------
