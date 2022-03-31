@@ -117,7 +117,6 @@ async def update_ticker(force=False):
 async def update_nicknames():
 	global updatingNickname
 	try:
-		print("!")
 		updatingNickname = True
 		await sleep(timeOffset)
 
