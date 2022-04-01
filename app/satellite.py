@@ -194,9 +194,12 @@ Processor.clientId = b"discord_satellite"
 
 @bot.event
 async def on_ready():
-	update_properties.start()
-	update_ticker.start()
-	update_nicknames.start()
+	if not update_properties.is_running():
+		update_properties.start()
+	if not update_ticker.is_running():
+		update_ticker.start()
+	if not update_nicknames.is_running():
+		update_nicknames.start()
 
 	print("[Startup]: Alpha Satellite is online")
 
