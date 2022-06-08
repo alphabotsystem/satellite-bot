@@ -64,7 +64,7 @@ async def on_guild_remove(guild):
 		if properties is None: return
 
 		if str(bot.user.id) in properties["addons"]["satellites"].get("added", []):
-			await database.document("discord/properties/guilds/{}".format(guild.id)).set({"addons": {"satellites": {"added": ArrayRemove([str(bot.user.id)])}}}, merge=True)
+			await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"added": ArrayRemove([str(bot.user.id)])}}}, merge=True)
 	except Exception:
 		print(format_exc())
 		if environ["PRODUCTION_MODE"]: logging.report_exception(user=str(guild.id))
@@ -77,14 +77,14 @@ async def on_guild_remove(guild):
 @tasks.loop(minutes=60.0)
 async def update_properties():
 	try:
-		satelliteRef = database.document("dataserver/configuration/satellites/{}".format(bot.user.id))
+		satelliteRef = database.document(f"dataserver/configuration/satellites/{bot.user.id}")
 		properties = await satelliteRef.get()
 		properties = properties.to_dict()
 
 		guildIds = [str(e.id) for e in bot.guilds]
 		for guildId in properties.get("servers", []):
 			if guildId not in guildIds:
-				await database.document("discord/properties/guilds/{}".format(guildId)).set({"addons": {"satellites": {"added": ArrayRemove([guildId])}}}, merge=True)
+				await database.document(f"discord/properties/guilds/{guildId}").set({"addons": {"satellites": {"added": ArrayRemove([guildId])}}}, merge=True)
 
 		await satelliteRef.set({"count": len(guildIds), "servers": guildIds})
 	except CancelledError: return
@@ -123,7 +123,7 @@ async def update_nicknames():
 			if not success: return
 
 		try: payload, quoteText = await Processor.process_task("quote", bot.user.id, request)
-		except: pass
+		except: return
 		if payload is None or "quotePrice" not in payload:
 			print("Something went wrong when fetching the price:", bot.user.id, quoteText)
 			print(payload)
@@ -133,9 +133,9 @@ async def update_nicknames():
 		ticker = currentRequest.get("ticker")
 
 		priceText = payload["quotePrice"]
-		changeText = "{} | ".format(payload["change"]) if "change" in payload else ""
-		tickerText = "{} | ".format(ticker.get("id")) if not bool(ticker.get("exchange")) else "{} on {} | ".format(ticker.get("id"), ticker.get("exchange").get("name"))
-		statusText = "{}{}alphabotsystem.com".format(changeText, tickerText)
+		changeText = f"{payload['change']} | " if "change" in payload else ""
+		tickerText = f"{ticker.get('id')} on {ticker.get('exchange').get('name')} | " if ticker.get("exchange") else f"{ticker.get('id')} | "
+		statusText = f"{changeText}{tickerText}alphabotsystem.com"
 		status = Status.dnd if payload.get("messageColor") == "red" else Status.online
 
 		for guild in bot.guilds:
@@ -159,9 +159,9 @@ async def update_nicknames():
 
 				if _accountProperties.get("customer", {}).get("personalSubscription", {}).get("subscription") is not None:
 					if not _guildProperties["addons"]["satellites"]["enabled"]:
-						await database.document("discord/properties/guilds/{}".format(guild.id)).set({"addons": {"satellites": {"enabled": True, "connection": connection}}}, merge=True)
+						await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"enabled": True, "connection": connection}}}, merge=True)
 					if str(bot.user.id) not in _guildProperties["addons"]["satellites"].get("added", []):
-						await database.document("discord/properties/guilds/{}".format(guild.id)).set({"addons": {"satellites": {"added": ArrayUnion([str(bot.user.id)])}}}, merge=True)
+						await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"added": ArrayUnion([str(bot.user.id)])}}}, merge=True)
 					await update_nickname(guild, priceText)
 				else:
 					await update_nickname(guild, "Alpha Pro required")
@@ -208,5 +208,5 @@ async def on_ready():
 # Login
 # -------------------------
 
-token = environ["ID_{}".format(constants.satellites[satelliteId])]
+token = environ[f"ID_{constants.satellites[satelliteId]}"]
 bot.run(token)

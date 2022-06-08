@@ -6,7 +6,7 @@ metadata:
   labels:
     app: satellites
 spec:
-  replicas: 84
+  replicas: 112
   selector:
     matchLabels:
       app: satellites
@@ -27,7 +27,7 @@ spec:
             readOnly: true
         resources:
           requests:
-            memory: "60Mi"
+            memory: "64Mi"
             cpu: "1m"
         env: 
           - name: PRODUCTION_MODE
@@ -452,6 +452,146 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_952621342203715655
+          - name: ID_978658892563247145
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978658892563247145
+          - name: ID_979840337625362474
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_979840337625362474
+          - name: ID_978658636178018394
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978658636178018394
+          - name: ID_978658777349910628
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978658777349910628
+          - name: ID_978659048075431966
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978659048075431966
+          - name: ID_978659204690751508
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978659204690751508
+          - name: ID_978659278959280249
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978659278959280249
+          - name: ID_978666800512380928
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978666800512380928
+          - name: ID_978666857051619403
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978666857051619403
+          - name: ID_978666961397497876
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978666961397497876
+          - name: ID_978667016472887317
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_978667016472887317
+          - name: ID_979840070179778561
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_979840070179778561
+          - name: ID_979840114802978877
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_979840114802978877
+          - name: ID_979840170809491466
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_979840170809491466
+          - name: ID_979840435633664130
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_979840435633664130
+          - name: ID_979840483201286234
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_979840483201286234
+          - name: ID_979840523160408114
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_979840523160408114
+          - name: ID_979840574859395132
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_979840574859395132
+          - name: ID_979840628278067300
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_979840628278067300
+          - name: ID_980036888444411934
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_980036888444411934
+          - name: ID_980036945025572935
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_980036945025572935
+          - name: ID_980036992706437120
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_980036992706437120
+          - name: ID_980037061128093756
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_980037061128093756
+          - name: ID_980037121115033600
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_980037121115033600
+          - name: ID_980037193785569300
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_980037193785569300
+          - name: ID_980037254300979201
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_980037254300979201
+          - name: ID_980037317404291102
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_980037317404291102
+          - name: ID_984182071264153660
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_984182071264153660
         ports:
           - containerPort: 6911
       volumes:
