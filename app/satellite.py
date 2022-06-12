@@ -80,6 +80,7 @@ async def update_properties():
 		satelliteRef = database.document(f"dataserver/configuration/satellites/{bot.user.id}")
 		properties = await satelliteRef.get()
 		properties = properties.to_dict()
+		if properties is None: properties = {}
 
 		guildIds = [str(e.id) for e in bot.guilds]
 		for guildId in properties.get("servers", []):
