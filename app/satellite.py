@@ -87,7 +87,7 @@ async def update_properties():
 			if guildId not in guildIds:
 				await database.document(f"discord/properties/guilds/{guildId}").set({"addons": {"satellites": {"added": ArrayRemove([guildId])}}}, merge=True)
 
-		await satelliteRef.set({"count": len(guildIds), "servers": guildIds})
+		await satelliteRef.set({"count": len(guildIds), "servers": guildIds, "user": {"icon": str(bot.user.avatar.replace(format="png", size=256)), "name": bot.user.name}})
 	except CancelledError: return
 	except Exception:
 		print(format_exc())
