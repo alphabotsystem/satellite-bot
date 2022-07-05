@@ -43,9 +43,11 @@ bot = AutoShardedClient(intents=intents, status=Status.idle, activity=None)
 # Task setup
 # -------------------------
 
+priceText = None
+statusText = None
+
 request = None
 updatingNickname = False
-priceText = None
 timeOffset = randint(0, 600) / 10.0
 platform, exchange, tickerId = constants.configuration[constants.satellites[satelliteId]]
 isFree = platform == "CoinGecko" and exchange is None and tickerId in ["BTCUSD", "ETHUSD"]
@@ -89,7 +91,16 @@ async def update_properties():
 				await database.document(f"discord/properties/guilds/{guildId}").set({"addons": {"satellites": {"added": ArrayRemove([guildId])}}}, merge=True)
 
 		if priceText is not None:
-			await satelliteRef.set({"count": len(guildIds), "servers": guildIds, "user": {"icon": str(bot.user.avatar.replace(format="png", size=256)), "name": bot.user.name, "price": priceText}})
+			await satelliteRef.set({
+				"count": len(guildIds),
+				"servers": guildIds,
+				"user": {
+					"icon": str(bot.user.avatar.replace(format="png", size=256)),
+					"name": bot.user.name,
+					"watching": statusText,
+					"price": priceText
+				}
+			})
 	except CancelledError: return
 	except Exception:
 		print(format_exc())
@@ -116,7 +127,7 @@ async def update_ticker(force=False):
 
 @tasks.loop(minutes=refreshRate)
 async def update_nicknames():
-	global updatingNickname, priceText
+	global updatingNickname, priceText, statusText
 	try:
 		updatingNickname = True
 		await sleep(timeOffset)
