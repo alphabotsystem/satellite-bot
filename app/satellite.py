@@ -95,7 +95,7 @@ async def update_properties():
 				"count": len(guildIds),
 				"servers": guildIds,
 				"user": {
-					"icon": str(bot.user.avatar.replace(format="png", size=256)),
+					"icon": str(bot.user.avatar.replace(format="png", size=512)),
 					"name": bot.user.name,
 					"watching": statusText,
 					"price": priceText
