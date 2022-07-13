@@ -171,7 +171,8 @@ async def update_nicknames():
 					await sleep(0.5)
 					continue
 
-				if _accountProperties.get("customer", {}).get("personalSubscription", {}).get("subscription") is not None:
+				if True:
+				# if _accountProperties.get("customer", {}).get("personalSubscription", {}).get("subscription") is not None:
 					if not _guildProperties["addons"]["satellites"]["enabled"]:
 						await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"enabled": True, "connection": connection}}}, merge=True)
 					if str(bot.user.id) not in _guildProperties["addons"]["satellites"].get("added", []):
