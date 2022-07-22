@@ -156,7 +156,7 @@ async def update_nicknames():
 					continue
 
 				slots = properties.get("connection", {}).get("customer", {}).get("slots", {}).get("satellites", {}).get(guild.id, 0)
-				added = sorted(properties["addons"]["satellites"]["added"])
+				added = sorted(properties["addons"]["satellites"].get("added", []))
 
 				if str(bot.user.id) not in added:
 					await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"added": ArrayUnion([str(bot.user.id)])}}}, merge=True)
