@@ -81,6 +81,7 @@ async def on_guild_remove(guild):
 async def update_properties():
 	try:
 		if priceText is not None:
+			guildIds = [str(e.id) for e in bot.guilds]
 			await database.document(f"dataserver/configuration/satellites/{bot.user.id}").set({
 				"count": len(guildIds),
 				"servers": guildIds,
