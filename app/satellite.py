@@ -74,24 +74,14 @@ async def on_guild_remove(guild):
 
 
 # -------------------------
-# Job functions
+# Tasks
 # -------------------------
 
 @tasks.loop(minutes=60.0)
 async def update_properties():
 	try:
-		satelliteRef = database.document(f"dataserver/configuration/satellites/{bot.user.id}")
-		properties = await satelliteRef.get()
-		properties = properties.to_dict()
-		if properties is None: properties = {}
-
-		guildIds = [str(e.id) for e in bot.guilds]
-		for guildId in properties.get("servers", []):
-			if guildId not in guildIds:
-				await database.document(f"discord/properties/guilds/{guildId}").set({"addons": {"satellites": {"added": ArrayRemove([guildId])}}}, merge=True)
-
 		if priceText is not None:
-			await satelliteRef.set({
+			await database.document(f"dataserver/configuration/satellites/{bot.user.id}").set({
 				"count": len(guildIds),
 				"servers": guildIds,
 				"user": {
@@ -160,23 +150,19 @@ async def update_nicknames():
 				await update_nickname(guild, priceText)
 
 			else:
-				_guildProperties = await guildProperties.get(guild.id)
-				if _guildProperties is None:
+				properties = await guildProperties.get(guild.id)
+				if properties is None:
 					await sleep(0.5)
 					continue
 
-				connection = _guildProperties.get("addons", {}).get("satellites", {}).get("connection", _guildProperties.get("settings", {}).get("setup", {}).get("connection"))
-				_accountProperties = await accountProperties.get(connection)
-				if _accountProperties is None:
-					await sleep(0.5)
-					continue
+				slots = properties.get("connection", {}).get("customer", {}).get("slots", {}).get("satellites", {}).get(guild.id, 0)
+				added = sorted(properties["addons"]["satellites"]["added"])
 
-				if True:
-				# if _accountProperties.get("customer", {}).get("personalSubscription", {}).get("subscription") is not None:
-					if not _guildProperties["addons"]["satellites"]["enabled"]:
-						await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"enabled": True, "connection": connection}}}, merge=True)
-					if str(bot.user.id) not in _guildProperties["addons"]["satellites"].get("added", []):
-						await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"added": ArrayUnion([str(bot.user.id)])}}}, merge=True)
+				if str(bot.user.id) not in added:
+					await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"added": ArrayUnion([str(bot.user.id)])}}}, merge=True)
+					added.append(str(bot.user.id))
+    
+				if str(bot.user.id) in added[:slots] or True: # Temp
 					await update_nickname(guild, priceText)
 				else:
 					await update_nickname(guild, "Alpha Pro required")
