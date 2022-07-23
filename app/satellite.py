@@ -61,6 +61,14 @@ else: refreshRate = 5.0
 # -------------------------
 
 @bot.event
+async def on_guild_join(guild):
+	try:
+		await update_properties()
+	except Exception:
+		print(format_exc())
+		if environ["PRODUCTION_MODE"]: logging.report_exception(user=str(guild.id))
+
+@bot.event
 async def on_guild_remove(guild):
 	try:
 		properties = await guildProperties.get(guild.id)
@@ -68,6 +76,8 @@ async def on_guild_remove(guild):
 
 		if str(bot.user.id) in properties["addons"]["satellites"].get("added", []):
 			await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"added": ArrayRemove([str(bot.user.id)])}}}, merge=True)
+
+		await update_properties()
 	except Exception:
 		print(format_exc())
 		if environ["PRODUCTION_MODE"]: logging.report_exception(user=str(guild.id))
