@@ -173,7 +173,7 @@ async def update_nicknames():
 				# Get all filled satellite slots
 				slots = properties.get("connection", {}).get("customer", {}).get("slots", {}).get("satellites", {})
 				# Get subscription quantity
-				subscription = properties.get("connection", {}).get("customer", {}).get("subscription", {}).get("satellites", {})
+				subscription = properties.get("connection", {}).get("customer", {}).get("subscription", {}).get("satellites", 0)
 
 				# Empty list by default when subscription doesn't cover servers up to current one
 				added = []
