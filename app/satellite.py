@@ -66,7 +66,7 @@ async def on_guild_join(guild):
 		properties = await guildProperties.get(guild.id)
 		if properties is None: return
 
-		await database.document(f"discord/properties/guilds/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
+		await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
 
 		await update_properties()
 	except Exception:
@@ -79,7 +79,7 @@ async def on_guild_remove(guild):
 		properties = await guildProperties.get(guild.id)
 		if properties is None: return
 
-		await database.document(f"discord/properties/guilds/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayRemove([str(bot.user.id)])}}}}}, merge=True)
+		await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayRemove([str(bot.user.id)])}}}}}, merge=True)
 
 		await update_properties()
 	except Exception:
@@ -195,11 +195,11 @@ async def update_nicknames():
 
 				if str(bot.user.id) not in slots.get(guild.id, {}).get("added", []):
 					# If bot isn't added to the list of all bots in the server, add it
-					await database.document(f"discord/properties/guilds/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
+					await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
 					# Continue, otherwise it would show as "Alpha Pro required"
 					continue
     
-				if str(bot.user.id):
+				if str(bot.user.id) in added:
 					await update_nickname(guild, priceText + " *")
 				else:
 					await update_nickname(guild, priceText)
