@@ -186,7 +186,7 @@ async def update_nicknames():
 					if subscription <= 0:
 						# If slots run out, break out resulting in added == []
 						break
-					if guildId == guild.id:
+					if guildId == str(guild.id):
 						# If we get to the current guild, get a sorted list of added bots capped at the available slot count
 						added = sorted(bots)[:subscription]
 						# Stop the search
@@ -195,7 +195,7 @@ async def update_nicknames():
 						# Subtract used slots from total slots
 						subscription -= len(bots)
 
-				if str(bot.user.id) not in slots.get(guild.id, {}).get("added", []):
+				if str(bot.user.id) not in slots.get(str(guild.id), {}).get("added", []):
 					# If bot isn't added to the list of all bots in the server, add it
 					if properties['settings']['setup']['connection'] is not None:
 						await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
