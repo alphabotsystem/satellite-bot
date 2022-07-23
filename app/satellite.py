@@ -63,6 +63,11 @@ else: refreshRate = 5.0
 @bot.event
 async def on_guild_join(guild):
 	try:
+		properties = await guildProperties.get(guild.id)
+		if properties is None: return
+
+		await database.document(f"discord/properties/guilds/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
+
 		await update_properties()
 	except Exception:
 		print(format_exc())
@@ -74,8 +79,7 @@ async def on_guild_remove(guild):
 		properties = await guildProperties.get(guild.id)
 		if properties is None: return
 
-		if str(bot.user.id) in properties["addons"]["satellites"].get("added", []):
-			await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"added": ArrayRemove([str(bot.user.id)])}}}, merge=True)
+		await database.document(f"discord/properties/guilds/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayRemove([str(bot.user.id)])}}}}}, merge=True)
 
 		await update_properties()
 	except Exception:
@@ -166,17 +170,40 @@ async def update_nicknames():
 					await sleep(0.5)
 					continue
 
-				slots = properties.get("connection", {}).get("customer", {}).get("slots", {}).get("satellites", {}).get(guild.id, 0)
-				added = sorted(properties["addons"]["satellites"].get("added", []))
+				# Get all filled satellite slots
+				slots = properties.get("connection", {}).get("customer", {}).get("slots", {}).get("satellites", {})
+				# Get subscription quantity
+				subscription = properties.get("connection", {}).get("customer", {}).get("subscription", {}).get("satellites", {})
 
-				if str(bot.user.id) not in added:
-					await database.document(f"discord/properties/guilds/{guild.id}").set({"addons": {"satellites": {"added": ArrayUnion([str(bot.user.id)])}}}, merge=True)
-					added.append(str(bot.user.id))
+				# Empty list by default when subscription doesn't cover servers up to current one
+				added = []
+				# Iterate over sorted guilds in satellite slot configuration
+				for guildId in sorted(slots.keys()):
+					# Get all bots added to the server
+					bots = slots[guildId].get("added", [])
+					if subscription <= 0:
+						# If slots run out, break out resulting in added == []
+						break
+					if guildId == guild.id:
+						# If we get to the current guild, get a sorted list of added bots capped at the available slot count
+						added = sorted(bots)[:subscription]
+						# Stop the search
+						break
+					else:
+						# Subtract used slots from total slots
+						subscription -= len(bots)
+
+				if str(bot.user.id) not in slots.get(guild.id, {}).get("added", []):
+					# If bot isn't added to the list of all bots in the server, add it
+					await database.document(f"discord/properties/guilds/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
+					# Continue, otherwise it would show as "Alpha Pro required"
+					continue
     
-				if str(bot.user.id) in added[:slots] or True: # Temp
-					await update_nickname(guild, priceText)
+				if str(bot.user.id):
+					await update_nickname(guild, priceText + " *")
 				else:
-					await update_nickname(guild, "Alpha Pro required")
+					await update_nickname(guild, priceText)
+					# await update_nickname(guild, "Alpha Pro required")
 
 		try: await bot.change_presence(status=status, activity=Activity(type=ActivityType.watching, name=statusText))
 		except: pass
