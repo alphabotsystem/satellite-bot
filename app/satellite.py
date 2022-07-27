@@ -181,7 +181,7 @@ async def update_nicknames():
 				added = []
 				# Iterate over sorted guilds in satellite slot configuration
 				for guildId in sorted(slots.keys()):
-					# Get all bots added to the server
+					# Get all bots added to each server
 					bots = slots[guildId].get("added", [])
 					if subscription <= 0:
 						# If slots run out, break out resulting in added == []
@@ -201,12 +201,11 @@ async def update_nicknames():
 						await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
 					# Continue, otherwise it would show as "Alpha Pro required"
 					continue
-    
+
 				if str(bot.user.id) in added:
-					await update_nickname(guild, priceText + " *")
-				else:
 					await update_nickname(guild, priceText)
-					# await update_nickname(guild, "Alpha Pro required")
+				else:
+					await update_nickname(guild, "Alpha Pro required")
 
 		try: await bot.change_presence(status=status, activity=Activity(type=ActivityType.watching, name=statusText))
 		except: pass
