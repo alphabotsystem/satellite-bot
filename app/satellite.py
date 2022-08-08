@@ -126,6 +126,8 @@ async def update_ticker(force=False):
 			print("Parsing failed:", outputMessage)
 			print(request)
 			return False
+
+		request["bot"] = True
 		return True
 	except CancelledError: return
 	except Exception:
