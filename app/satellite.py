@@ -36,7 +36,7 @@ logging = ErrorReportingClient(service="satellites")
 intents = Intents.none()
 intents.guilds = True
 
-bot = AutoShardedClient(intents=intents, status=Status.idle, activity=None)
+bot = AutoShardedClient(intents=intents, chunk_guilds_at_startup=False, max_messages=None, status=Status.idle, activity=None)
 
 
 # -------------------------
