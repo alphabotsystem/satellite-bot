@@ -120,5 +120,5 @@ configuration = {
 	1007972248302391326: ["IEXC", None, "PYPL"],
 	1007973142146338846: ["CoinGecko", None, "ARBUSD"],
 	1007973544321359954: ["CoinGecko", None, "GALAUSD"],
-	1007973142146338846: ["CoinGecko", None, "TOWNUSD"],
+	1007973810844209212: ["CoinGecko", None, "TOWNUSD"],
 }
