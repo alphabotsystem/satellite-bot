@@ -592,6 +592,31 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_984182071264153660
+          - name: ID_1007973142146338846
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_1007973142146338846
+          - name: ID_1007973544321359954
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_1007973544321359954
+          - name: ID_1007973810844209212
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_1007973810844209212
+          - name: ID_1007972248302391326
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_1007972248302391326
+          - name: ID_1007972796934139914
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_1007972796934139914
         ports:
           - containerPort: 6911
       volumes:
