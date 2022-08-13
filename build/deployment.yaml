@@ -6,7 +6,7 @@ metadata:
   labels:
     app: satellites
 spec:
-  replicas: 95
+  replicas: 96
   selector:
     matchLabels:
       app: satellites
