@@ -52,7 +52,7 @@ timeOffset = randint(0, 600) / 10.0
 platform, exchange, tickerId = constants.configuration[constants.satellites[satelliteId]]
 isFree = platform == "CoinGecko" and exchange is None and tickerId in ["BTCUSD", "ETHUSD"]
 
-if platform == "CCXT": refreshRate = 1.0
+if platform == "CCXT": refreshRate = 2.0
 else: refreshRate = 5.0
 
 
