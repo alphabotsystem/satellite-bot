@@ -30,7 +30,7 @@ spec:
             memory: "64Mi"
             cpu: "1m"
         env: 
-          - name: PRODUCTION_MODE
+          - name: PRODUCTION
             value: "1"
           - name: ID_709850457467650138
             valueFrom:

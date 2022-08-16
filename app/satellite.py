@@ -1,5 +1,5 @@
 from os import environ, _exit
-environ["PRODUCTION_MODE"] = environ["PRODUCTION_MODE"] if "PRODUCTION_MODE" in environ and environ["PRODUCTION_MODE"] else ""
+environ["PRODUCTION"] = environ["PRODUCTION"] if "PRODUCTION" in environ and environ["PRODUCTION"] else ""
 satelliteId = 0 if len(environ["HOSTNAME"].split("-")) == 1 else int(environ["HOSTNAME"].split("-")[-1])
 if not environ.get("IS_FREE"): satelliteId += 2
 
@@ -72,7 +72,7 @@ async def on_guild_join(guild):
 		await update_properties()
 	except Exception:
 		print(format_exc())
-		if environ["PRODUCTION_MODE"]: logging.report_exception(user=str(guild.id))
+		if environ["PRODUCTION"]: logging.report_exception(user=str(guild.id))
 
 @bot.event
 async def on_guild_remove(guild):
@@ -86,7 +86,7 @@ async def on_guild_remove(guild):
 		await update_properties()
 	except Exception:
 		print(format_exc())
-		if environ["PRODUCTION_MODE"]: logging.report_exception(user=str(guild.id))
+		if environ["PRODUCTION"]: logging.report_exception(user=str(guild.id))
 
 
 # -------------------------
@@ -111,7 +111,7 @@ async def update_properties():
 	except CancelledError: return
 	except Exception:
 		print(format_exc())
-		if environ["PRODUCTION_MODE"]: logging.report_exception()
+		if environ["PRODUCTION"]: logging.report_exception()
 
 @tasks.loop(minutes=60.0)
 async def update_ticker(force=False):
@@ -132,7 +132,7 @@ async def update_ticker(force=False):
 	except CancelledError: return
 	except Exception:
 		print(format_exc())
-		if environ["PRODUCTION_MODE"]: logging.report_exception()
+		if environ["PRODUCTION"]: logging.report_exception()
 
 @tasks.loop(minutes=refreshRate)
 async def update_nicknames():
@@ -215,7 +215,7 @@ async def update_nicknames():
 	except CancelledError: return
 	except Exception:
 		print(format_exc())
-		if environ["PRODUCTION_MODE"]: logging.report_exception()
+		if environ["PRODUCTION"]: logging.report_exception()
 	finally:
 		updatingNickname = False
 

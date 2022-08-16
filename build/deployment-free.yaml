@@ -30,7 +30,7 @@ spec:
             memory: "220Mi"
             cpu: "16m"
         env: 
-          - name: PRODUCTION_MODE
+          - name: PRODUCTION
             value: "1"
           - name: IS_FREE
             value: "1"
