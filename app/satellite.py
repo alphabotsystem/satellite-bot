@@ -125,6 +125,7 @@ async def update_ticker(force=False):
 		if outputMessage is not None:
 			print("Parsing failed:", outputMessage)
 			print(request)
+			request = None
 			return False
 
 		request["bot"] = True
