@@ -114,13 +114,9 @@ async def update_properties():
 		if environ["PRODUCTION"]: logging.report_exception()
 
 @tasks.loop(minutes=60.0)
-async def update_ticker(force=False):
+async def update_ticker():
 	global request
 	try:
-		if not force:
-			# Make the request at random in order not to stress the parsing server too much
-			await sleep(randint(0, 3600))
-
 		outputMessage, request = await Processor.process_quote_arguments(CommandRequest(), [] if exchange is None else [exchange], [platform], tickerId=tickerId)
 		if outputMessage is not None:
 			print("Parsing failed:", outputMessage)
@@ -143,7 +139,7 @@ async def update_nicknames():
 		await sleep(timeOffset)
 
 		if request is None or len(request.get("platforms", [])) == 0:
-			success = await update_ticker(force=True)
+			success = await update_ticker()
 			if not success: return
 
 		try: payload, quoteText = await Processor.process_task("quote", bot.user.id, request)
@@ -252,5 +248,6 @@ async def on_ready():
 # Login
 # -------------------------
 
+sleep(randint(0, int(refreshRate * 60)))
 token = environ[f"ID_{constants.satellites[satelliteId]}"]
 bot.run(token)
