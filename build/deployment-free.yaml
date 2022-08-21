@@ -19,12 +19,8 @@ spec:
     spec:
       containers:
       - name: satellites
-        image: europe-west4-docker.pkg.dev/nlc-bot-36685/alpha-bot/satellite
+        image: us-central1-docker.pkg.dev/nlc-bot-36685/satellite/production
         imagePullPolicy: Always
-        volumeMounts:
-          - name: google-cloud-auth
-            mountPath: /run/secrets/google-cloud-auth
-            readOnly: true
         resources:
           requests:
             memory: "220Mi"
@@ -46,10 +42,3 @@ spec:
                 key: ID_751080162300526653
         ports:
           - containerPort: 6911
-      volumes:
-        - name: google-cloud-auth
-          secret:
-            secretName: google-cloud-auth
-            items:
-              - key: gcloud_credentials.json
-                path: key
