@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: satellites
-        image: us-central1-docker.pkg.dev/satellite/production
+        image: us-central1-docker.pkg.dev/nlc-bot-36685/satellite/production
         imagePullPolicy: Always
         resources:
           requests:
