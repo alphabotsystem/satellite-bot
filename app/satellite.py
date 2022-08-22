@@ -151,10 +151,11 @@ async def update_nicknames():
 
 		currentRequest = request.get(payload.get("platform"))
 		ticker = currentRequest.get("ticker")
+		exchangeId = ticker.get("exchange", {}).get("id")
 
 		priceText = payload["quotePrice"]
 		changeText = f"{payload['change']} | " if "change" in payload else ""
-		tickerText = f"{ticker.get('id')} on {ticker.get('exchange').get('name')} | " if ticker.get("exchange") else f"{ticker.get('id')} | "
+		tickerText = f"{ticker.get('id')} on {ticker.get('exchange').get('name')} | " if exchangeId is not None and exchangeId != "fx" else f"{ticker.get('id')} | "
 		statusText = f"{changeText}{tickerText}alphabotsystem.com"
 		status = Status.dnd if payload.get("messageColor") == "red" else Status.online
 
