@@ -235,6 +235,7 @@ Processor.clientId = b"discord_satellite"
 
 @bot.event
 async def on_ready():
+	await sleep(randint(0, int(refreshRate * 60)))
 	if not update_properties.is_running():
 		update_properties.start()
 	if not update_ticker.is_running():
@@ -249,6 +250,5 @@ async def on_ready():
 # Login
 # -------------------------
 
-sleep(randint(0, int(refreshRate * 60)))
 token = environ[f"ID_{constants.satellites[satelliteId]}"]
 bot.run(token)
