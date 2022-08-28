@@ -117,9 +117,9 @@ async def update_properties():
 async def update_ticker():
 	global request
 	try:
-		outputMessage, request = await Processor.process_quote_arguments(CommandRequest(), [] if exchange is None else [exchange], [platform], tickerId=tickerId)
-		if outputMessage is not None:
-			print("Parsing failed:", outputMessage)
+		responseMessage, request = await Processor.process_quote_arguments(CommandRequest(), [] if exchange is None else [exchange], [platform], tickerId=tickerId)
+		if responseMessage is not None:
+			print("Parsing failed:", responseMessage)
 			print(request)
 			request = None
 			return False
@@ -142,10 +142,10 @@ async def update_nicknames():
 			success = await update_ticker()
 			if not success: return
 
-		try: payload, quoteText = await Processor.process_task("quote", bot.user.id, request, retries=1)
+		try: payload, responseMessage = await Processor.process_task("quote", bot.user.id, request, retries=1)
 		except: return
 		if payload is None or "quotePrice" not in payload:
-			print("Something went wrong when fetching the price:", bot.user.id, quoteText)
+			print("Something went wrong when fetching the price:", bot.user.id, responseMessage)
 			print(payload)
 			return
 
