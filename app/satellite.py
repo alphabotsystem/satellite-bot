@@ -16,7 +16,6 @@ from google.cloud.firestore import AsyncClient as FirestoreAsyncClient
 from google.cloud.firestore import ArrayUnion, ArrayRemove
 from google.cloud.error_reporting import Client as ErrorReportingClient
 
-from helpers.utils import Utils
 from helpers import constants
 
 from DatabaseConnector import DatabaseConnector
