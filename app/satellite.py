@@ -17,9 +17,8 @@ from google.cloud.firestore import ArrayUnion, ArrayRemove
 from google.cloud.error_reporting import Client as ErrorReportingClient
 
 from helpers import constants
-
 from DatabaseConnector import DatabaseConnector
-from Processor import Processor
+from Processor import process_quote_arguments, process_task
 
 from CommandRequest import CommandRequest
 
@@ -116,7 +115,7 @@ async def update_properties():
 async def update_ticker():
 	global request
 	try:
-		responseMessage, request = await Processor.process_quote_arguments(CommandRequest(), [] if exchange is None else [exchange], [platform], tickerId=tickerId)
+		responseMessage, request = await process_quote_arguments(CommandRequest(), [] if exchange is None else [exchange], [platform], tickerId=tickerId)
 		if responseMessage is not None:
 			print("Parsing failed:", responseMessage)
 			print(request)
@@ -141,7 +140,7 @@ async def update_nicknames():
 			success = await update_ticker()
 			if not success: return
 
-		try: payload, responseMessage = await Processor.process_task("quote", bot.user.id, request, retries=1)
+		try: payload, responseMessage = await process_task(request, "quote", retries=1)
 		except: return
 		if payload is None or "quotePrice" not in payload:
 			print("Something went wrong when fetching the price:", bot.user.id, responseMessage)
@@ -230,7 +229,6 @@ async def update_nickname(guild, nickname):
 
 accountProperties = DatabaseConnector(mode="account")
 guildProperties = DatabaseConnector(mode="guild")
-Processor.clientId = b"discord_satellite"
 
 @bot.event
 async def on_ready():
