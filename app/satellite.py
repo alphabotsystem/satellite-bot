@@ -20,8 +20,6 @@ from helpers import constants
 from DatabaseConnector import DatabaseConnector
 from Processor import process_quote_arguments, process_task
 
-from CommandRequest import CommandRequest
-
 
 database = FirestoreAsyncClient()
 logging = ErrorReportingClient(service="satellites")
@@ -115,7 +113,7 @@ async def update_properties():
 async def update_ticker():
 	global request
 	try:
-		responseMessage, request = await process_quote_arguments(CommandRequest(), [] if exchange is None else [exchange], [platform], tickerId=tickerId)
+		responseMessage, request = await process_quote_arguments([] if exchange is None else [exchange], [platform], tickerId=tickerId)
 		if responseMessage is not None:
 			print("Parsing failed:", responseMessage)
 			print(request)
