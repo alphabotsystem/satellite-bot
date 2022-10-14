@@ -59,6 +59,8 @@ else: refreshRate = 5.0
 @bot.event
 async def on_guild_join(guild):
 	try:
+		if isFree: return
+
 		properties = await guildProperties.get(guild.id)
 		if properties is None: return
 
@@ -73,6 +75,8 @@ async def on_guild_join(guild):
 @bot.event
 async def on_guild_remove(guild):
 	try:
+		if isFree: return
+
 		properties = await guildProperties.get(guild.id)
 		if properties is None: return
 
