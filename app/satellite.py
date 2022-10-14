@@ -75,7 +75,7 @@ async def on_guild_join(guild):
 @bot.event
 async def on_guild_remove(guild):
 	try:
-		# if isFree: return
+		if isFree: return
 
 		properties = await guildProperties.get(guild.id)
 		if properties is None: return
@@ -165,7 +165,6 @@ async def update_nicknames():
 
 			if isFree:
 				await update_nickname(guild, priceText)
-				await on_guild_remove(guild)
 
 			else:
 				properties = await guildProperties.get(guild.id)
