@@ -1,4 +1,4 @@
-discord.py[speed]>=2.0.0
-google-cloud-error-reporting>=0.33.0
-google-cloud-firestore>=1.9.0
-pytz>=2019.2
+discord.py[speed]>=2.0.1
+google-cloud-error-reporting>=1.6.3
+google-cloud-firestore>=2.7.2
+pytz>=2022.5
