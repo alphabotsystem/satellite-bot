@@ -62,7 +62,7 @@ jobs:
     # Deploy the Docker image to the GKE cluster
     - name: Deploy
       run: |-
-        kubectl delete statefulsets/${{ env.SERVICE }} --namespace=alpha-bot || :
-        kubectl delete statefulsets/${{ env.SERVICE }}-free --namespace=alpha-bot || :
+        kubectl delete statefulsets/${{ env.DEPLOYMENT_NAME }} --namespace=alpha-bot || :
+        kubectl delete statefulsets/${{ env.DEPLOYMENT_NAME }}-free --namespace=alpha-bot || :
         kubectl apply -f build/deployment.yaml
         kubectl apply -f build/deployment-free.yaml
