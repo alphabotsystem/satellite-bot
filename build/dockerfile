@@ -17,4 +17,4 @@ RUN rm -r ./dependencies
 COPY ./src ./
 
 # Run
-ENTRYPOINT ["python", "satellite.py"]
+ENTRYPOINT ["python", "-u", "satellite.py"]
