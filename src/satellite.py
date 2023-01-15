@@ -205,7 +205,7 @@ async def update_nicknames():
 				if str(bot.user.id) in added:
 					await update_nickname(guild, priceText)
 				else:
-					await update_nickname(guild, "One more subscription slot required")
+					await update_nickname(guild, "More subscription slots required")
 
 		try: await bot.change_presence(status=status, activity=Activity(type=ActivityType.watching, name=statusText))
 		except: pass
