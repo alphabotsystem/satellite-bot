@@ -222,7 +222,7 @@ async def update_nickname(guild, nickname):
 		try:
 			await guild.me.edit(nick=nickname)
 		except Exception as e:
-			print(f"Couldn't update nickname in {guild.name} ({guild.id}): {e}")
+			print(f"Couldn't update nickname of {bot.user.id} in {guild.name} ({guild.id}): {e}")
 	else:
 		await sleep(0.5)
 
