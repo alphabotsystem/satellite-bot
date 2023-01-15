@@ -170,6 +170,7 @@ async def update_nicknames():
 				properties = await guildProperties.get(guild.id)
 				if properties is None:
 					print(f"{bot.user.id} couldn't fetch properties for {guild.name} ({guild.id})")
+					await update_nickname(guild, "Alpha Bot not set up")
 					continue
 
 				# Get all filled satellite slots
@@ -201,7 +202,7 @@ async def update_nicknames():
 						await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
 						added.append(str(bot.user.id))
 					else:
-						await update_nickname(guild, "Alpha Bot is missing")
+						await update_nickname(guild, "Alpha Bot not set up")
 						continue
 
 				if str(bot.user.id) in added:
