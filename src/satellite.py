@@ -199,8 +199,10 @@ async def update_nicknames():
 					# If bot isn't added to the list of all bots in the server, add it
 					if properties['settings']['setup']['connection'] is not None:
 						await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
-					# Continue, otherwise it would show as "One more subscription slot required"
-					continue
+						added.append(str(bot.user.id))
+					else:
+						await update_nickname(guild, "Alpha Bot is missing")
+						continue
 
 				if str(bot.user.id) in added:
 					await update_nickname(guild, priceText)
