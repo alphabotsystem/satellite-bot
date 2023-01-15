@@ -219,8 +219,10 @@ async def update_nicknames():
 
 async def update_nickname(guild, nickname):
 	if guild.me.nick != nickname:
-		try: await guild.me.edit(nick=nickname)
-		except: pass
+		try:
+			await guild.me.edit(nick=nickname)
+		except Exception as e:
+			print(f"Couldn't update nickname in {guild.name} ({guild.id}): {e}")
 	else:
 		await sleep(0.5)
 
