@@ -169,7 +169,7 @@ async def update_nicknames():
 			else:
 				properties = await guildProperties.get(guild.id)
 				if properties is None:
-					await sleep(0.5)
+					print(f"{bot.user.id} couldn't fetch properties for {guild.name} ({guild.id}): {e}")
 					continue
 
 				# Get all filled satellite slots
@@ -223,8 +223,6 @@ async def update_nickname(guild, nickname):
 			await guild.me.edit(nick=nickname)
 		except Exception as e:
 			print(f"Couldn't update nickname of {bot.user.id} in {guild.name} ({guild.id}): {e}")
-	else:
-		await sleep(0.5)
 
 
 # -------------------------
