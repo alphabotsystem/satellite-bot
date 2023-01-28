@@ -223,7 +223,7 @@ async def update_nicknames():
 async def update_nickname(guild, nickname):
 	if guild.me.nick != nickname:
 		try:
-			await guild.me.edit(nick=nickname)
+			if environ["PRODUCTION"]: await guild.me.edit(nick=nickname)
 		except Exception as e:
 			print(f"Couldn't update nickname of {bot.user.id} in {guild.name} ({guild.id}): {e}")
 
