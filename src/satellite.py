@@ -245,7 +245,7 @@ async def on_ready():
 	if not update_nicknames.is_running():
 		update_nicknames.start()
 
-	print("[Startup]: Alpha Satellite is online")
+	print("[Startup]: Alpha.bot Satellite is online")
 
 
 # -------------------------
