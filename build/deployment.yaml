@@ -6,7 +6,7 @@ metadata:
   labels:
     app: satellites
 spec:
-  replicas: 88
+  replicas: 89
   selector:
     matchLabels:
       app: satellites
@@ -25,7 +25,7 @@ spec:
           requests:
             memory: "64Mi"
             cpu: "1m"
-        env: 
+        env:
           - name: PRODUCTION
             value: "1"
           - name: ID_709850457467650138
@@ -618,5 +618,10 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_1034089749247443064
+          - name: ID_1082659843535540245
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_1082659843535540245
         ports:
           - containerPort: 6911
