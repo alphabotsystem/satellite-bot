@@ -156,8 +156,8 @@ async def update_nicknames():
 
 		if isFGI:
 			priceText = f"{payload['quotePrice']} {payload['quoteConvertedPrice']}"
-			changeText = f"{payload['change']} | "
-			tickerText = "crypto | " if platform == "Alternative.me" else "stocks | "
+			changeText = "crypto | " if platform == "Alternative.me" else "stocks | "
+			tickerText = f"{payload['change']} | "
 		else:
 			priceText = payload["quotePrice"]
 			changeText = f"{payload['change']} | " if "change" in payload else ""
