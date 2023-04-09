@@ -47,6 +47,7 @@ updatingNickname = False
 timeOffset = randint(0, 600) / 10.0
 platform, exchange, tickerId = constants.configuration[constants.satellites[satelliteId]]
 isFree = platform == "CoinGecko" and exchange is None and tickerId in ["BTCUSD", "ETHUSD"]
+isFGI = platform in ["Alternative.me", "CNN Business"]
 
 if platform == "CCXT": refreshRate = 2.0
 else: refreshRate = 5.0
@@ -119,8 +120,8 @@ async def update_ticker():
 	try:
 		responseMessage, request = await process_quote_arguments([] if exchange is None else [exchange], [platform], tickerId=tickerId)
 		if responseMessage is not None:
-			print(f"[{bot.user.id}] Parsing failed: {responseMessage}")
-			print(f"[{bot.user.id}] {request}")
+			print(f"[{bot.user.id}]: Parsing failed: {responseMessage}")
+			print(f"[{bot.user.id}]: {request}")
 			request = None
 			return False
 
@@ -145,17 +146,23 @@ async def update_nicknames():
 		try: payload, responseMessage = await process_task(request, "quote", retries=1)
 		except: return
 		if payload is None or "quotePrice" not in payload:
-			print(f"[{bot.user.id}] Something went wrong when fetching the price: {responseMessage}")
-			print(f"[{bot.user.id}] {payload}")
+			print(f"[{bot.user.id}]: Something went wrong when fetching the price: {responseMessage}")
+			print(f"[{bot.user.id}]: {payload}")
 			return
 
 		currentRequest = request.get(payload.get("platform"))
 		ticker = currentRequest.get("ticker")
 		exchangeId = ticker.get("exchange", {}).get("id")
 
-		priceText = payload["quotePrice"]
-		changeText = f"{payload['change']} | " if "change" in payload else ""
-		tickerText = f"{ticker.get('id')} on {ticker.get('exchange').get('name')} | " if exchangeId is not None and exchangeId != "forex" else f"{ticker.get('id')} | "
+		if isFGI:
+			priceText = f"{payload['quotePrice']} | {payload['quoteConvertedPrice']}"
+			changeText = payload["change"]
+			tickerText = "crypto" if platform == "Alternative.me" else "stocks"
+		else:
+			priceText = payload["quotePrice"]
+			changeText = f"{payload['change']} | " if "change" in payload else ""
+			tickerText = f"{ticker.get('id')} on {ticker.get('exchange').get('name')} | " if exchangeId is not None and exchangeId != "forex" else f"{ticker.get('id')} | "
+
 		statusText = f"{changeText}{tickerText}www.alpha.bot"
 		status = Status.dnd if payload.get("messageColor") == "red" else Status.online
 
@@ -169,7 +176,7 @@ async def update_nicknames():
 			else:
 				properties = await guildProperties.get(guild.id)
 				if properties is None:
-					print(f"[{bot.user.id}] Couldn't fetch properties for {guild.name} ({guild.id})")
+					print(f"[{bot.user.id}]: Couldn't fetch properties for {guild.name} ({guild.id})")
 					await update_nickname(guild, "Alpha.bot not set up")
 					continue
 
@@ -225,7 +232,7 @@ async def update_nickname(guild, nickname):
 		try:
 			if environ["PRODUCTION"]: await guild.me.edit(nick=nickname)
 		except Exception as e:
-			print(f"[{bot.user.id}] Couldn't update nickname in {guild.name} ({guild.id}): {e}")
+			print(f"[{bot.user.id}]: Couldn't update nickname in {guild.name} ({guild.id}): {e}")
 
 
 # -------------------------
