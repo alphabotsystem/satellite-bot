@@ -119,8 +119,8 @@ async def update_ticker():
 	try:
 		responseMessage, request = await process_quote_arguments([] if exchange is None else [exchange], [platform], tickerId=tickerId)
 		if responseMessage is not None:
-			print("Parsing failed:", responseMessage)
-			print(request)
+			print(f"[{bot.user.id}] Parsing failed: {responseMessage}")
+			print(f"[{bot.user.id}] {request}")
 			request = None
 			return False
 
@@ -145,8 +145,8 @@ async def update_nicknames():
 		try: payload, responseMessage = await process_task(request, "quote", retries=1)
 		except: return
 		if payload is None or "quotePrice" not in payload:
-			print("Something went wrong when fetching the price:", bot.user.id, responseMessage)
-			print(payload)
+			print(f"[{bot.user.id}] Something went wrong when fetching the price: {responseMessage}")
+			print(f"[{bot.user.id}] {payload}")
 			return
 
 		currentRequest = request.get(payload.get("platform"))
@@ -169,7 +169,7 @@ async def update_nicknames():
 			else:
 				properties = await guildProperties.get(guild.id)
 				if properties is None:
-					print(f"{bot.user.id} couldn't fetch properties for {guild.name} ({guild.id})")
+					print(f"[{bot.user.id}] Couldn't fetch properties for {guild.name} ({guild.id})")
 					await update_nickname(guild, "Alpha.bot not set up")
 					continue
 
@@ -225,7 +225,7 @@ async def update_nickname(guild, nickname):
 		try:
 			if environ["PRODUCTION"]: await guild.me.edit(nick=nickname)
 		except Exception as e:
-			print(f"Couldn't update nickname of {bot.user.id} in {guild.name} ({guild.id}): {e}")
+			print(f"[{bot.user.id}] Couldn't update nickname in {guild.name} ({guild.id}): {e}")
 
 
 # -------------------------
@@ -245,7 +245,7 @@ async def on_ready():
 	if not update_nicknames.is_running():
 		update_nicknames.start()
 
-	print("[Startup]: Alpha.bot Satellite is online")
+	print(f"[Startup]: Alpha.bot Satellite ({bot.user.id}) is online")
 
 
 # -------------------------

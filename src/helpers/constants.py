@@ -97,6 +97,6 @@ configuration = {
 	1017784552929890395: ["CCXT", "binance", "LDOUSDT"],
 	1034089749247443064: ["CCXT", "binance", "APTUSDT"],
 	1082659843535540245: ["CoinGecko", None, "ACSUSD"],
-	1092127867334316205: ["AM", None, "FGI"],
-	1092128010242629754: ["CNN", None, "FGI"],
+	1092127867334316205: ["Alternative.me", None, "FGI"],
+	1092128010242629754: ["CNN Business", None, "FGI"],
 }
