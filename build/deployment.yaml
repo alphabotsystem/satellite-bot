@@ -6,7 +6,7 @@ metadata:
   labels:
     app: satellites
 spec:
-  replicas: 90
+  replicas: 91
   selector:
     matchLabels:
       app: satellites
@@ -638,5 +638,10 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_1102222771280420904
+          - name: ID_1109849106773463193
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_1109849106773463193
         ports:
           - containerPort: 6911
