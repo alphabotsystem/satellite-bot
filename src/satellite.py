@@ -69,7 +69,7 @@ async def on_guild_join(guild):
 			await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
 
 		await update_properties()
-	except Exception:
+	except:
 		print(format_exc())
 		if environ["PRODUCTION"]: logging.report_exception(user=str(guild.id))
 
@@ -85,7 +85,7 @@ async def on_guild_remove(guild):
 			await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayRemove([str(bot.user.id)])}}}}}, merge=True)
 
 		await update_properties()
-	except Exception:
+	except:
 		print(format_exc())
 		if environ["PRODUCTION"]: logging.report_exception(user=str(guild.id))
 
@@ -110,7 +110,7 @@ async def update_properties():
 				}
 			})
 	except CancelledError: return
-	except Exception:
+	except:
 		print(format_exc())
 		if environ["PRODUCTION"]: logging.report_exception()
 
@@ -128,7 +128,7 @@ async def update_ticker():
 		request["bot"] = True
 		return True
 	except CancelledError: return
-	except Exception:
+	except:
 		print(format_exc())
 		if environ["PRODUCTION"]: logging.report_exception()
 
@@ -221,7 +221,7 @@ async def update_nicknames():
 		except: pass
 
 	except CancelledError: return
-	except Exception:
+	except:
 		print(format_exc())
 		if environ["PRODUCTION"]: logging.report_exception()
 	finally:
