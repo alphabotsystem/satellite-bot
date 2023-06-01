@@ -6,7 +6,6 @@ if not environ.get("IS_FREE"): satelliteId += 2
 from time import time
 from random import randint
 from datetime import datetime
-from pytz import utc
 from asyncio import CancelledError, sleep
 from traceback import format_exc
 
