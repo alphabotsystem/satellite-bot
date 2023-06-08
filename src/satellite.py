@@ -1,3 +1,5 @@
+FREE_THRESHOLD = 10
+
 from os import environ, _exit
 environ["PRODUCTION"] = environ["PRODUCTION"] if "PRODUCTION" in environ and environ["PRODUCTION"] else ""
 satelliteId = 0 if len(environ["HOSTNAME"].split("-")) == 1 else int(environ["HOSTNAME"].split("-")[-1])
@@ -185,6 +187,7 @@ async def update_nicknames():
 				subscription = properties.get("connection", {}).get("customer", {}).get("subscriptions", {}).get("satellites", 0)
 
 				# Empty list by default when subscription doesn't cover servers up to current one
+				inFreeTier = False
 				added = []
 				# Iterate over sorted guilds in satellite slot configuration
 				for guildId in sorted(slots.keys()):
@@ -195,23 +198,33 @@ async def update_nicknames():
 						break
 					if guildId == str(guild.id):
 						# If we get to the current guild, get a sorted list of added bots capped at the available slot count
-						added = sorted(bots)[:subscription]
+						# or 20, whichever is lower
+						added = sorted(bots)[:min(subscription, FREE_THRESHOLD)]
+						subscription -= len(added)
+						# If the list is longer than the free tier threshold, we're in the free tier
+						inFreeTier = len(bots) > FREE_THRESHOLD
 						# Stop the search
 						break
 					else:
 						# Subtract used slots from total slots
-						subscription -= len(bots)
+						subscription -= min(len(bots), FREE_THRESHOLD)
 
 				if str(bot.user.id) not in slots.get(str(guild.id), {}).get("added", []):
-					# If bot isn't added to the list of all bots in the server, add it
+					# We still add the bot id to the server list of bots if it's not there
 					if properties['settings']['setup']['connection'] is not None:
+						# If bot isn't added to the list of all bots in the server, add it
 						await database.document(f"accounts/{properties['settings']['setup']['connection']}").set({"customer": {"slots": {"satellites": {str(guild.id): {"added": ArrayUnion([str(bot.user.id)])}}}}}, merge=True)
-						added.append(str(bot.user.id))
+						if inFreeTier or subscription > 0:
+							added.append(str(bot.user.id))
 					else:
 						await update_nickname(guild, "Alpha.bot not set up")
 						continue
+				elif inFreeTier:
+					# If we're in the free tier, add the bot to the local list of all bots in the server
+					added.append(str(bot.user.id))
 
 				if str(bot.user.id) in added:
+					# If the bot is in the list of all bots in the server, update the nickname
 					await update_nickname(guild, priceText)
 				else:
 					await update_nickname(guild, "More subscription slots required")
