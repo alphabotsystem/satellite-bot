@@ -59,11 +59,11 @@ impl EventHandler for Handler {
     }
 
     async fn cache_ready(&self, _ctx: Context, _guilds: Vec<GuildId>) {
-        let ctx = Arc::new(_ctx);
-
         if !self.is_loop_running.load(Ordering::Relaxed) {
+            println!("[{}]: Starting tasks", _ctx.cache.current_user().id);
             self.is_loop_running.swap(true, Ordering::Relaxed);
 
+            let ctx = Arc::new(_ctx);
             let ctx1 = Arc::clone(&ctx);
             tokio::spawn(async move {
                 loop {
@@ -186,6 +186,14 @@ async fn update_ticker(ctx: Arc<Context>) {
     let bot_id = ctx.cache.current_user().id;
     let (platform, exchange, ticker_id) = CONFIGURATION.get(&bot_id.0.get().to_string()).unwrap();
 
+    println!(
+        "[{}] Updating cached request for {}:{}:{}",
+        bot_id,
+        platform,
+        exchange.unwrap_or("_"),
+        ticker_id
+    );
+
     // Make parser request
     let arguments = match exchange {
         Some(exchange) => vec![*exchange],
@@ -226,9 +234,9 @@ async fn update_properties(ctx: Arc<Context>) {
     let user_info = match lock.read().await.clone() {
         Some(user_info) => user_info,
         None => {
-			println!("[{}] User info not cached yet", bot_id);
-			return;
-		},
+            println!("[{}] User info not cached yet", bot_id);
+            return;
+        }
     };
 
     // Update properties
@@ -260,9 +268,11 @@ async fn update_properties(ctx: Arc<Context>) {
 }
 
 async fn update_nicknames(ctx: Arc<Context>) -> Duration {
-	let start = Instant::now();
+    let start = Instant::now();
     let bot_id = ctx.cache.current_user().id;
     let is_free = env::var("IS_FREE").is_ok();
+
+	println!("[{}]: Updating nicknames", bot_id);
 
     // Obtain cached request object
     let lock = {
@@ -275,7 +285,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     let request = match lock.read().await.clone() {
         Some(request) => request,
         None => {
-			println!("[{}]: Force updating ticker", bot_id);
+            println!("[{}]: Force updating ticker", bot_id);
             update_ticker(ctx).await;
             return Duration::from_secs(0);
         }
@@ -380,11 +390,11 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                 .as_str()
                 .unwrap()
                 .to_string(),
-			if payload.get("change").is_some() {
-				format!("{} | ", payload.get("change").unwrap().as_str().unwrap())
-			} else {
-				"".to_string()
-			},
+            if payload.get("change").is_some() {
+                format!("{} | ", payload.get("change").unwrap().as_str().unwrap())
+            } else {
+                "".to_string()
+            },
             if exchange_id.is_some() && exchange_id.unwrap() != "forex" {
                 format!(
                     "{} on {} | ",
@@ -572,9 +582,9 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
         .await
         .expect("Couldn't commit transaction");
 
-	let duration = start.elapsed();
-	println!("[{}]: Updated nicknames in {:?}", bot_id, duration);
-	return duration;
+    let duration = start.elapsed();
+    println!("[{}]: Updated nicknames in {:?}", bot_id, duration);
+    return duration;
 }
 
 async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, nickname: &str) {
