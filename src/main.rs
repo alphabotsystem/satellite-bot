@@ -322,7 +322,7 @@ async fn update_nicknames(ctx: Arc<Context>) {
 
     // Generate all the necessary text
     let (price_text, change_text, ticker_text) = match platform {
-        "Aleternative.me" => (
+        "Alternative.me" => (
             format!(
                 "{} {}",
                 payload
