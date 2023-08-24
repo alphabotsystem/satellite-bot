@@ -628,7 +628,7 @@ async fn main() {
         data.insert::<UserInfo>(Arc::new(RwLock::new(None)));
     }
 
-    if let Err(why) = client.start().await {
+    if let Err(why) = client.start_autosharded().await {
         eprintln!("Client error: {:?}", why);
     }
 }
