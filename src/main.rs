@@ -50,6 +50,8 @@ struct Handler {
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
+		_ctx.set_presence(None, OnlineStatus::Idle);
+
         println!(
             "[Startup]: Alpha.bot Satellite ({}) is online",
             ready.user.id
@@ -270,7 +272,10 @@ async fn update_nicknames(ctx: Arc<Context>) {
     };
     let request = match lock.read().await.clone() {
         Some(request) => request,
-        None => return,
+        None => {
+			update_properties(ctx).await;
+			return
+		},
     };
 
     // Make quote request
@@ -444,7 +449,7 @@ async fn update_nicknames(ctx: Arc<Context>) {
     for guild in guilds.iter() {
         if is_free {
             // If the bot is in the free tier, update the nickname immediately
-            update_nickname(ctx.http.as_ref(), bot_id, guild, &price_text).await;
+            update_nickname(&ctx, bot_id, guild, &price_text).await;
         } else {
             // Get guild properties
             let guild_id = guild.0.get().to_string();
@@ -460,7 +465,7 @@ async fn update_nicknames(ctx: Arc<Context>) {
                 Some(connection) => connection.customer,
                 None => {
                     // Looks like the bot isn't set up yet
-                    update_nickname(ctx.http.as_ref(), bot_id, guild, "Alpha.bot not set up").await;
+                    update_nickname(&ctx, bot_id, guild, "Alpha.bot not set up").await;
                     continue;
                 }
             };
@@ -544,10 +549,10 @@ async fn update_nicknames(ctx: Arc<Context>) {
 
             if added.contains(&bot_id.0.get().to_string()) {
                 // If the bot is in the list of all bots in the server, update the nickname
-                update_nickname(ctx.http.as_ref(), bot_id, guild, &price_text).await;
+                update_nickname(&ctx, bot_id, guild, &price_text).await;
             } else {
                 update_nickname(
-                    ctx.http.as_ref(),
+					&ctx,
                     bot_id,
                     guild,
                     "More subscription slots required",
@@ -567,8 +572,20 @@ async fn update_nicknames(ctx: Arc<Context>) {
         .expect("Couldn't commit transaction");
 }
 
-async fn update_nickname(http: &Http, bot_id: UserId, guild: &GuildId, nickname: &str) {
-    let result = guild.edit_nickname(http, Some(nickname)).await;
+async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, nickname: &str) {
+	let current_nickname = guild
+		.to_guild_cached(&ctx.cache)
+		.expect("Couldn't get guild")
+		.members
+		.get(&bot_id)
+		.unwrap()
+		.nick
+		.clone();
+	if current_nickname == Some(nickname.to_string()) {
+		return;
+	}
+
+    let result = guild.edit_nickname(ctx.http.as_ref(), Some(nickname)).await;
     if let Err(err) = result {
         println!(
             "[{}]: Couldn't update nickname in {}: {:?}",
