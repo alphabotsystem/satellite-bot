@@ -188,7 +188,7 @@ async fn update_ticker(ctx: Arc<Context>) {
     let (platform, exchange, ticker_id) = CONFIGURATION.get(&bot_id.0.get().to_string()).unwrap();
 
     println!(
-        "[{}] Updating cached request for {}:{}:{}",
+        "[{}]: Updating cached request for {}:{}:{}",
         bot_id,
         platform,
         exchange.unwrap_or("_"),
@@ -242,7 +242,7 @@ async fn update_properties(ctx: Arc<Context>) {
     let user_info = match lock.read().await.clone() {
         Some(user_info) => user_info,
         None => {
-            println!("[{}] User info not cached yet", bot_id);
+            println!("[{}]: User info has not been cached yet", bot_id);
             return;
         }
     };
@@ -291,8 +291,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 		match request {
 			Some(request) => request,
 			None => {
-				println!("[{}]: Force updating ticker", bot_id);
-				update_ticker(ctx).await;
+				println!("[{}]: Request has not been cached yet", bot_id);
 				return Duration::from_secs(0);
 			}
 		}
