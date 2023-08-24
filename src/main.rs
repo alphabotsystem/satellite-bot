@@ -275,9 +275,8 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
     println!("[{}]: Updating nicknames", bot_id);
 
-    // Make quote request
-    let response = {
-		// Obtain cached request object
+	// Obtain cached request object
+	let request = {
 		let lock = {
 			let data_read = ctx.data.read().await;
 			data_read
@@ -286,17 +285,19 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 				.clone()
 		};
 
-		let request = match lock.read().await.clone() {
+		let request = lock.read().await.clone();
+		match request {
 			Some(request) => request,
 			None => {
 				println!("[{}]: Force updating ticker", bot_id);
 				update_ticker(ctx).await;
 				return Duration::from_secs(0);
 			}
-		};
-
-		process_task(request.clone(), "quote", None, None, None).await
+		}
 	};
+
+    // Make quote request
+    let response = process_task(request.clone(), "quote", None, None, None).await;
     let data = match response {
         Ok(response) => response,
         Err(err) => {
