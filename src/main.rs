@@ -9,13 +9,14 @@ use serenity::all::{Guild, OnlineStatus, UnavailableGuild, UserId};
 use serenity::async_trait;
 use serenity::gateway::ActivityData;
 use serenity::http::Http;
-use serenity::model::gateway::Ready;
-use serenity::model::id::GuildId;
+use serenity::model::{gateway::Ready, id::GuildId};
 use serenity::prelude::*;
 use std::env;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
@@ -66,7 +67,7 @@ impl EventHandler for Handler {
                 loop {
                     update_ticker(Arc::clone(&ctx1)).await;
                     update_properties(Arc::clone(&ctx1)).await;
-                    sleep(Duration::from_secs(60)).await;
+                    sleep(Duration::from_secs(60 * 15)).await;
                 }
             });
 
@@ -75,8 +76,10 @@ impl EventHandler for Handler {
             let ctx2 = Arc::clone(&ctx);
             tokio::spawn(async move {
                 loop {
+                    let start = Instant::now();
                     update_nicknames(Arc::clone(&ctx2)).await;
-                    sleep(Duration::from_secs(60)).await;
+                    let duration = start.elapsed();
+                    sleep(Duration::from_secs(60 * 2) - duration).await;
                 }
             });
         }
