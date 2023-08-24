@@ -377,7 +377,11 @@ async fn update_nicknames(ctx: Arc<Context>) {
                 .as_str()
                 .unwrap()
                 .to_string(),
-            format!("{} | ", payload.get("change").unwrap().as_str().unwrap()),
+			if payload.get("change").is_some() {
+				format!("{} | ", payload.get("change").unwrap().as_str().unwrap())
+			} else {
+				"".to_string()
+			},
             if exchange_id.is_some() && exchange_id.unwrap() != "forex" {
                 format!(
                     "{} on {} | ",
