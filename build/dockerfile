@@ -1,20 +1,18 @@
-FROM python:slim
+FROM rust:slim
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y git build-essential
+ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
-# Install dependencies
-COPY ./build/requirements.txt ./
-RUN pip install -r ./requirements.txt
-
-RUN git clone https://github.com/alphabotsystem/dependencies.git && cd ./dependencies && git checkout v2.9.2
-RUN pip install ./dependencies/py/commands
-RUN pip install ./dependencies/py/database
-RUN pip install ./dependencies/py/processor
-RUN rm -r ./dependencies
+RUN apt-get -y update \
+	&& apt-get -y install git pkg-config libssl-dev \
+	&& apt-get clean
 
 # Copy source code
-COPY ./src ./
+COPY ./bots/satellites/Cargo.toml ./
+COPY ./bots/satellites/src ./src
+
+# Build
+RUN cargo build --release
 
 # Run
-ENTRYPOINT ["python", "-u", "satellite.py"]
+ENTRYPOINT ["./target/release/satellite-bot"]

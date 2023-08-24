@@ -1,5 +1,5 @@
-*.pyc
-__pycache__
-node_modules/
 .vscode/
 dockerfile-test
+
+target/
+Cargo.lock
