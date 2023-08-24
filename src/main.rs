@@ -50,7 +50,7 @@ struct Handler {
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
-		_ctx.set_presence(None, OnlineStatus::Idle);
+        _ctx.set_presence(None, OnlineStatus::Idle);
 
         println!(
             "[Startup]: Alpha.bot Satellite ({}) is online",
@@ -273,9 +273,9 @@ async fn update_nicknames(ctx: Arc<Context>) {
     let request = match lock.read().await.clone() {
         Some(request) => request,
         None => {
-			update_properties(ctx).await;
-			return
-		},
+            update_properties(ctx).await;
+            return;
+        }
     };
 
     // Make quote request
@@ -551,13 +551,7 @@ async fn update_nicknames(ctx: Arc<Context>) {
                 // If the bot is in the list of all bots in the server, update the nickname
                 update_nickname(&ctx, bot_id, guild, &price_text).await;
             } else {
-                update_nickname(
-					&ctx,
-                    bot_id,
-                    guild,
-                    "More subscription slots required",
-                )
-                .await;
+                update_nickname(&ctx, bot_id, guild, "More subscription slots required").await;
             }
         }
     }
@@ -573,17 +567,17 @@ async fn update_nicknames(ctx: Arc<Context>) {
 }
 
 async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, nickname: &str) {
-	let current_nickname = guild
-		.to_guild_cached(&ctx.cache)
-		.expect("Couldn't get guild")
-		.members
-		.get(&bot_id)
-		.unwrap()
-		.nick
-		.clone();
-	if current_nickname == Some(nickname.to_string()) {
-		return;
-	}
+    let current_nickname = guild
+        .to_guild_cached(&ctx.cache)
+        .expect("Couldn't get guild")
+        .members
+        .get(&bot_id)
+        .unwrap()
+        .nick
+        .clone();
+    if current_nickname == Some(nickname.to_string()) {
+        return;
+    }
 
     let result = guild.edit_nickname(ctx.http.as_ref(), Some(nickname)).await;
     if let Err(err) = result {
