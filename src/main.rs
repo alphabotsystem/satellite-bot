@@ -273,7 +273,8 @@ async fn update_nicknames(ctx: Arc<Context>) {
     let request = match lock.read().await.clone() {
         Some(request) => request,
         None => {
-            update_properties(ctx).await;
+			println!("[{}]: Force updating ticker", bot_id);
+            update_ticker(ctx).await;
             return;
         }
     };
