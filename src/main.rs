@@ -8,7 +8,6 @@ use serde_json::Value;
 use serenity::all::{Guild, OnlineStatus, UnavailableGuild, UserId};
 use serenity::async_trait;
 use serenity::gateway::ActivityData;
-use serenity::http::Http;
 use serenity::model::{gateway::Ready, id::GuildId};
 use serenity::prelude::*;
 use std::env;
@@ -217,13 +216,20 @@ async fn update_ticker(ctx: Arc<Context>) {
             .clone()
     };
 
-    lock.write().await.replace(request);
+	{
+		lock.write().await.replace(request);
+	}
 }
 
 async fn update_properties(ctx: Arc<Context>) {
     let bot_id = ctx.cache.current_user().id;
 
-    // Obtain cached user info object
+    // Initialize database connection
+    let database = FirestoreDb::new(PROJECT)
+        .await
+        .expect("Couldn't connect to Firestore");
+
+	// Obtain cached user info object
     let lock = {
         let data_read = ctx.data.read().await;
         data_read
@@ -239,18 +245,13 @@ async fn update_properties(ctx: Arc<Context>) {
         }
     };
 
-    // Update properties
+	// Update properties
     let guilds = ctx.cache.guilds();
     let properties = SatelliteProperties {
         count: guilds.len(),
         servers: guilds.iter().map(|x| x.0.get().to_string()).collect(),
         user: user_info,
     };
-
-    // Initialize database connection
-    let database = FirestoreDb::new(PROJECT)
-        .await
-        .expect("Couldn't connect to Firestore");
 
     // Push properties to database
     let result = database
@@ -272,27 +273,30 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     let bot_id = ctx.cache.current_user().id;
     let is_free = env::var("IS_FREE").is_ok();
 
-	println!("[{}]: Updating nicknames", bot_id);
-
-    // Obtain cached request object
-    let lock = {
-        let data_read = ctx.data.read().await;
-        data_read
-            .get::<RequestCache>()
-            .expect("Expected CommandCounter in TypeMap.")
-            .clone()
-    };
-    let request = match lock.read().await.clone() {
-        Some(request) => request,
-        None => {
-            println!("[{}]: Force updating ticker", bot_id);
-            update_ticker(ctx).await;
-            return Duration::from_secs(0);
-        }
-    };
+    println!("[{}]: Updating nicknames", bot_id);
 
     // Make quote request
-    let response = process_task(request.clone(), "quote", None, None, None).await;
+    let response = {
+		// Obtain cached request object
+		let lock = {
+			let data_read = ctx.data.read().await;
+			data_read
+				.get::<RequestCache>()
+				.expect("Expected CommandCounter in TypeMap.")
+				.clone()
+		};
+
+		let request = match lock.read().await.clone() {
+			Some(request) => request,
+			None => {
+				println!("[{}]: Force updating ticker", bot_id);
+				update_ticker(ctx).await;
+				return Duration::from_secs(0);
+			}
+		};
+
+		process_task(request.clone(), "quote", None, None, None).await
+	};
     let data = match response {
         Ok(response) => response,
         Err(err) => {
@@ -440,16 +444,18 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
             .clone()
     };
 
-    lock.write().await.replace(UserInfo {
-        icon: ctx
-            .cache
-            .current_user()
-            .avatar_url()
-            .unwrap_or("".to_string()),
-        name: ctx.cache.current_user().name.clone(),
-        status: state.clone(),
-        price: price_text.clone(),
-    });
+	{
+		lock.write().await.replace(UserInfo {
+			icon: ctx
+				.cache
+				.current_user()
+				.avatar_url()
+				.unwrap_or("".to_string()),
+			name: ctx.cache.current_user().name.clone(),
+			status: state.clone(),
+			price: price_text.clone(),
+		});
+	}
 
     // Initialize database connections
     let database = FirestoreDb::new(PROJECT)
