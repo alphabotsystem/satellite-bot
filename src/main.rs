@@ -58,6 +58,8 @@ impl EventHandler for Handler {
     }
 
     async fn cache_ready(&self, _ctx: Context, _guilds: Vec<GuildId>) {
+		println!("[Startup]: Cache is ready");
+
         if !self.is_loop_running.load(Ordering::Relaxed) {
             println!("[{}]: Starting tasks", _ctx.cache.current_user().id);
             self.is_loop_running.swap(true, Ordering::Relaxed);
