@@ -78,10 +78,8 @@ impl EventHandler for Handler {
             let ctx2 = Arc::clone(&ctx);
             tokio::spawn(async move {
                 loop {
-                    let start = Instant::now();
-                    update_nicknames(Arc::clone(&ctx2)).await;
-                    let duration = start.elapsed();
-                    sleep(Duration::from_secs(60 * 2) - duration).await;
+                    let duration = update_nicknames(Arc::clone(&ctx2)).await;
+                    sleep(Duration::from_secs(60 * 15) - duration).await;
                 }
             });
         }
@@ -227,7 +225,10 @@ async fn update_properties(ctx: Arc<Context>) {
     };
     let user_info = match lock.read().await.clone() {
         Some(user_info) => user_info,
-        None => return,
+        None => {
+			println!("[{}] User info not cached yet", bot_id);
+			return;
+		},
     };
 
     // Update properties
@@ -258,7 +259,8 @@ async fn update_properties(ctx: Arc<Context>) {
     }
 }
 
-async fn update_nicknames(ctx: Arc<Context>) {
+async fn update_nicknames(ctx: Arc<Context>) -> Duration {
+	let start = Instant::now();
     let bot_id = ctx.cache.current_user().id;
     let is_free = env::var("IS_FREE").is_ok();
 
@@ -275,7 +277,7 @@ async fn update_nicknames(ctx: Arc<Context>) {
         None => {
 			println!("[{}]: Force updating ticker", bot_id);
             update_ticker(ctx).await;
-            return;
+            return Duration::from_secs(0);
         }
     };
 
@@ -288,7 +290,7 @@ async fn update_nicknames(ctx: Arc<Context>) {
                 "[{}]: Something went wrong when fetching the price: {}",
                 bot_id, err
             );
-            return;
+            return Duration::from_secs(0);
         }
     };
 
@@ -302,7 +304,7 @@ async fn update_nicknames(ctx: Arc<Context>) {
             bot_id, message
         );
         eprintln!("[{}]: {:?}", bot_id, payload);
-        return;
+        return Duration::from_secs(0);
     }
 
     let platform = payload
@@ -569,6 +571,10 @@ async fn update_nicknames(ctx: Arc<Context>) {
         .commit()
         .await
         .expect("Couldn't commit transaction");
+
+	let duration = start.elapsed();
+	println!("[{}]: Updated nicknames in {:?}", bot_id, duration);
+	return duration;
 }
 
 async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, nickname: &str) {
