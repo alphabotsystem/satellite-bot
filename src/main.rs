@@ -79,7 +79,7 @@ impl EventHandler for Handler {
             tokio::spawn(async move {
                 loop {
                     let duration = update_nicknames(Arc::clone(&ctx2)).await;
-                    sleep(Duration::from_secs(60 * 15) - duration).await;
+                    sleep(Duration::from_secs(60 * 2) - duration).await;
                 }
             });
         }
