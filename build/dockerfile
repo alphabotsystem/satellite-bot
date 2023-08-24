@@ -8,8 +8,8 @@ RUN apt-get -y update \
 	&& apt-get clean
 
 # Copy source code
-COPY ./bots/satellites/Cargo.toml ./
-COPY ./bots/satellites/src ./src
+COPY ./Cargo.toml ./
+COPY ./src ./src
 
 # Build
 RUN cargo build --release
