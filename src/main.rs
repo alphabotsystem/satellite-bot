@@ -544,11 +544,13 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     .contains(&bot_id.0.get().to_string())
             {
                 // We still add the bot id to the server list of bots if it's not there
-                database
+                let owner = properties.settings.setup.connection.unwrap();
+                println!("[{}]: Adding bot to {} by {}", bot_id, guild_id, owner);
+                let result = database
                     .fluent()
                     .update()
                     .in_col("accounts")
-                    .document_id(properties.settings.setup.connection.unwrap())
+                    .document_id(&owner)
                     .transforms(|t| {
                         let field = format!("customer.slots.satellites.`{}`.added", guild_id);
                         t.fields([t
@@ -556,8 +558,15 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                             .append_missing_elements([bot_id.0.get().to_string()])])
                     })
                     .only_transform()
-                    .add_to_transaction(&mut transaction)
-                    .expect("Couldn't add update to transaction");
+                    .add_to_transaction(&mut transaction);
+
+                if let Err(err) = result {
+                    eprintln!(
+                        "[{}]: Couldn't add bot to {} by {}: {:?}",
+                        bot_id, guild_id, owner, err
+                    );
+					continue;
+                }
 
                 if in_free_tier || subscription > 0 {
                     added.push(bot_id.0.get().to_string());
@@ -580,10 +589,10 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     ctx.set_presence(Some(ActivityData::custom(state)), status);
 
     // Commit database transaction
-    transaction
-        .commit()
-        .await
-        .expect("Couldn't commit transaction");
+    let result = transaction.commit().await;
+    if let Err(err) = result {
+        eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
+    }
 
     let duration = start.elapsed();
     println!("[{}]: Updated nicknames in {:?}", bot_id, duration);
