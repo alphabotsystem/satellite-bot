@@ -460,14 +460,15 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     }
 
     // Initialize database connections
-    let database = FirestoreDb::new(PROJECT)
+    let guild_properties = DatabaseConnector::<GuildProperties>::new();
+	let database = FirestoreDb::new(PROJECT)
         .await
         .expect("Couldn't connect to Firestore");
     let mut transaction = database
         .begin_transaction()
         .await
         .expect("Couldn't start transaction");
-    let guild_properties = DatabaseConnector::<GuildProperties>::new();
+	let mut needs_commit = false;
 
     // Update guild nicknames
     let guilds = ctx.cache.guilds();
@@ -572,6 +573,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     );
                     continue;
                 }
+				needs_commit = true;
 
                 if in_free_tier || subscription > 0 {
                     added.push(bot_id.0.get().to_string());
@@ -593,11 +595,13 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     // Update global presence
     ctx.set_presence(Some(ActivityData::custom(state)), status);
 
-    // Commit database transaction
-    let result = transaction.commit().await;
-    if let Err(err) = result {
-        eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
-    }
+	if needs_commit {
+		// Commit database transaction
+		let result = transaction.commit().await;
+		if let Err(err) = result {
+			eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
+		}
+	}
 
     let duration = start.elapsed();
     println!("[{}]: Updated nicknames in {:?}", bot_id, duration);
