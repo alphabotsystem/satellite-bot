@@ -51,17 +51,7 @@ impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
         _ctx.set_presence(None, OnlineStatus::Idle);
 
-        println!(
-            "[Startup]: Alpha.bot Satellite ({}) is online",
-            ready.user.id
-        );
-    }
-
-    async fn cache_ready(&self, _ctx: Context, _guilds: Vec<GuildId>) {
-		println!("[Startup]: Cache is ready");
-
         if !self.is_loop_running.load(Ordering::Relaxed) {
-            println!("[{}]: Starting tasks", _ctx.cache.current_user().id);
             self.is_loop_running.swap(true, Ordering::Relaxed);
 
             let ctx = Arc::new(_ctx);
@@ -84,6 +74,11 @@ impl EventHandler for Handler {
                 }
             });
         }
+
+        println!(
+            "[Startup]: Alpha.bot Satellite ({}) is online",
+            ready.user.id
+        );
     }
 
     async fn guild_create(&self, _ctx: Context, guild: Guild, _is_new: Option<bool>) {
@@ -214,13 +209,13 @@ async fn update_ticker(ctx: Arc<Context>) {
         let data_read = ctx.data.read().await;
         data_read
             .get::<RequestCache>()
-            .expect("Expected CommandCounter in TypeMap.")
+            .expect("Expected RequestCache in TypeMap")
             .clone()
     };
 
-	{
-		lock.write().await.replace(request);
-	}
+    {
+        lock.write().await.replace(request);
+    }
 }
 
 async fn update_properties(ctx: Arc<Context>) {
@@ -231,12 +226,12 @@ async fn update_properties(ctx: Arc<Context>) {
         .await
         .expect("Couldn't connect to Firestore");
 
-	// Obtain cached user info object
+    // Obtain cached user info object
     let lock = {
         let data_read = ctx.data.read().await;
         data_read
             .get::<UserInfo>()
-            .expect("Expected CommandCounter in TypeMap.")
+            .expect("Expected UserInfo in TypeMap")
             .clone()
     };
     let user_info = match lock.read().await.clone() {
@@ -247,7 +242,7 @@ async fn update_properties(ctx: Arc<Context>) {
         }
     };
 
-	// Update properties
+    // Update properties
     let guilds = ctx.cache.guilds();
     let properties = SatelliteProperties {
         count: guilds.len(),
@@ -277,25 +272,25 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
     println!("[{}]: Updating nicknames", bot_id);
 
-	// Obtain cached request object
-	let request = {
-		let lock = {
-			let data_read = ctx.data.read().await;
-			data_read
-				.get::<RequestCache>()
-				.expect("Expected CommandCounter in TypeMap.")
-				.clone()
-		};
+    // Obtain cached request object
+    let request = {
+        let lock = {
+            let data_read = ctx.data.read().await;
+            data_read
+                .get::<RequestCache>()
+                .expect("Expected RequestCache in TypeMap")
+                .clone()
+        };
 
-		let request = lock.read().await.clone();
-		match request {
-			Some(request) => request,
-			None => {
-				println!("[{}]: Request has not been cached yet", bot_id);
-				return Duration::from_secs(0);
-			}
-		}
-	};
+        let request = lock.read().await.clone();
+        match request {
+            Some(request) => request,
+            None => {
+                println!("[{}]: Request has not been cached yet", bot_id);
+                return Duration::from_secs(0);
+            }
+        }
+    };
 
     // Make quote request
     let response = process_task(request.clone(), "quote", None, None, None).await;
@@ -442,22 +437,22 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
         let data_read = ctx.data.read().await;
         data_read
             .get::<UserInfo>()
-            .expect("Expected CommandCounter in TypeMap.")
+            .expect("Expected UserInfo in TypeMap")
             .clone()
     };
 
-	{
-		lock.write().await.replace(UserInfo {
-			icon: ctx
-				.cache
-				.current_user()
-				.avatar_url()
-				.unwrap_or("".to_string()),
-			name: ctx.cache.current_user().name.clone(),
-			status: state.clone(),
-			price: price_text.clone(),
-		});
-	}
+    {
+        lock.write().await.replace(UserInfo {
+            icon: ctx
+                .cache
+                .current_user()
+                .avatar_url()
+                .unwrap_or("".to_string()),
+            name: ctx.cache.current_user().name.clone(),
+            status: state.clone(),
+            price: price_text.clone(),
+        });
+    }
 
     // Initialize database connections
     let database = FirestoreDb::new(PROJECT)
@@ -596,14 +591,10 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 }
 
 async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, nickname: &str) {
-    let current_nickname = guild
-        .to_guild_cached(&ctx.cache)
-        .expect("Couldn't get guild")
-        .members
-        .get(&bot_id)
-        .unwrap()
-        .nick
-        .clone();
+    let current_nickname = match guild.to_guild_cached(&ctx.cache) {
+        Some(guild) => guild.members.get(&bot_id).unwrap().nick.clone(),
+        None => None,
+    };
     if current_nickname == Some(nickname.to_string()) {
         return;
     }
@@ -619,16 +610,11 @@ async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, ni
 
 #[tokio::main]
 async fn main() {
-    let mut satellite_id: usize = if env::var("HOSTNAME").is_ok() {
-        env::var("HOSTNAME")
-            .unwrap_or("".to_string())
-            .split("-")
-            .last()
-            .unwrap()
-            .parse()
-            .unwrap_or(0)
-    } else {
-        0
+    sleep(Duration::from_secs(5)).await;
+
+    let mut satellite_id: usize = match env::var("HOSTNAME") {
+        Ok(hostname) => hostname.split("-").last().unwrap().parse().unwrap_or(0),
+        Err(_) => 0,
     };
 
     if env::var("IS_FREE").is_err() {
