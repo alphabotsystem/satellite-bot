@@ -1,5 +1,8 @@
 mod config;
-use config::{CONFIGURATION, FREE_THRESHOLD, PROJECT, SATELLITES};
+use config::{
+    CONFIGURATION, FREE_THRESHOLD, PRICE_REFRESH_SECONDS, PROJECT, REQUEST_REFRESH_SECONDS,
+    SATELLITES,
+};
 use database::{DatabaseConnector, GuildProperties};
 use firestore::*;
 use processor::{process_quote_arguments, process_task};
@@ -60,7 +63,7 @@ impl EventHandler for Handler {
                 loop {
                     update_ticker(Arc::clone(&ctx1)).await;
                     update_properties(Arc::clone(&ctx1)).await;
-                    sleep(Duration::from_secs(60 * 15)).await;
+                    sleep(Duration::from_secs(REQUEST_REFRESH_SECONDS)).await;
                 }
             });
 
@@ -70,7 +73,9 @@ impl EventHandler for Handler {
             tokio::spawn(async move {
                 loop {
                     let duration = update_nicknames(Arc::clone(&ctx2)).await;
-                    sleep(Duration::from_secs(60 * 2) - duration).await;
+                    if duration.as_secs() < PRICE_REFRESH_SECONDS {
+                        sleep(Duration::from_secs(PRICE_REFRESH_SECONDS) - duration).await;
+                    }
                 }
             });
         }
@@ -565,7 +570,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                         "[{}]: Couldn't add bot to {} by {}: {:?}",
                         bot_id, guild_id, owner, err
                     );
-					continue;
+                    continue;
                 }
 
                 if in_free_tier || subscription > 0 {
