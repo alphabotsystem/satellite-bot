@@ -52,10 +52,10 @@ struct Handler {
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
+		_ctx.set_presence(None, OnlineStatus::Idle);
+
         if !self.is_loop_running.load(Ordering::Relaxed) {
             self.is_loop_running.swap(true, Ordering::Relaxed);
-
-            _ctx.set_presence(None, OnlineStatus::Idle);
 
             let ctx = Arc::new(_ctx);
             let ctx1 = Arc::clone(&ctx);
@@ -595,6 +595,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     // Update global presence
     ctx.set_presence(Some(ActivityData::custom(state)), status);
 
+	// Commit database transaction if necessary
 	if needs_commit {
 		// Commit database transaction
 		let result = transaction.commit().await;
