@@ -8,19 +8,24 @@ use firestore::*;
 use processor::{process_quote_arguments, process_task};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use serenity::all::{Guild, OnlineStatus, UnavailableGuild, UserId};
-use serenity::async_trait;
-use serenity::gateway::ActivityData;
-use serenity::model::{gateway::Ready, id::GuildId};
-use serenity::prelude::*;
-use std::env;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use serenity::{
+    all::{Guild, OnlineStatus, ShardId, UnavailableGuild, UserId},
+    async_trait,
+    gateway::ActivityData,
+    model::{gateway::Ready, id::GuildId},
+    prelude::*,
+    utils::shard_id,
 };
-use std::time::{Duration, Instant};
-use tokio::sync::RwLock;
-use tokio::time::sleep;
+use std::{
+    collections::HashSet,
+    env,
+    sync::Arc,
+    time::{Duration, Instant},
+};
+use tokio::{
+    sync::{Mutex, RwLock},
+    time::sleep,
+};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct UserInfo {
@@ -46,16 +51,22 @@ impl TypeMapKey for RequestCache {
 }
 
 struct Handler {
-    is_loop_running: AtomicBool,
+    tasks: Arc<Mutex<HashSet<ShardId>>>,
 }
 
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
-		_ctx.set_presence(None, OnlineStatus::Idle);
+        if let Some(shard) = ready.shard {
+            {
+                let mut tasks = self.tasks.lock().await;
+                if tasks.contains(&shard.id) {
+                    return;
+                }
+                tasks.insert(shard.id);
+            }
 
-        if !self.is_loop_running.load(Ordering::Relaxed) {
-            self.is_loop_running.swap(true, Ordering::Relaxed);
+            _ctx.set_presence(None, OnlineStatus::Idle);
 
             let ctx = Arc::new(_ctx);
             let ctx1 = Arc::clone(&ctx);
@@ -78,12 +89,14 @@ impl EventHandler for Handler {
                     }
                 }
             });
-        }
 
-        println!(
-            "[Startup]: Alpha.bot Satellite ({}) is online",
-            ready.user.id
-        );
+            println!(
+                "[Startup]: Alpha.bot Satellite ({}) is online (shard {}/{})",
+                ready.user.id,
+                shard.id.0 + 1,
+                shard.total,
+            );
+        }
     }
 
     async fn guild_create(&self, _ctx: Context, guild: Guild, _is_new: Option<bool>) {
@@ -210,15 +223,14 @@ async fn update_ticker(ctx: Arc<Context>) {
     }
 
     // Update global cache
-    let lock = {
-        let data_read = ctx.data.read().await;
-        data_read
-            .get::<RequestCache>()
-            .expect("Expected RequestCache in TypeMap")
-            .clone()
-    };
-
     {
+        let lock = {
+            let data_read = ctx.data.read().await;
+            data_read
+                .get::<RequestCache>()
+                .expect("Expected RequestCache in TypeMap")
+                .clone()
+        };
         lock.write().await.replace(request);
     }
 }
@@ -232,18 +244,22 @@ async fn update_properties(ctx: Arc<Context>) {
         .expect("Couldn't connect to Firestore");
 
     // Obtain cached user info object
-    let lock = {
-        let data_read = ctx.data.read().await;
-        data_read
-            .get::<UserInfo>()
-            .expect("Expected UserInfo in TypeMap")
-            .clone()
-    };
-    let user_info = match lock.read().await.clone() {
-        Some(user_info) => user_info,
-        None => {
-            println!("[{}]: User info has not been cached yet", bot_id);
-            return;
+    let user_info = {
+        let lock = {
+            let data_read = ctx.data.read().await;
+            data_read
+                .get::<UserInfo>()
+                .expect("Expected UserInfo in TypeMap")
+                .clone()
+        };
+
+        let user_info = lock.read().await.clone();
+        match user_info {
+            Some(user_info) => user_info,
+            None => {
+                println!("[{}]: User info has not been cached yet", bot_id);
+                return;
+            }
         }
     };
 
@@ -273,6 +289,7 @@ async fn update_properties(ctx: Arc<Context>) {
 async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     let start = Instant::now();
     let bot_id = ctx.cache.current_user().id;
+    let shard_count = ctx.cache.as_ref().shard_count();
     let is_free = env::var("IS_FREE").is_ok();
 
     println!("[{}]: Updating nicknames", bot_id);
@@ -438,15 +455,15 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     };
 
     // Update global cache
-    let lock = {
-        let data_read = ctx.data.read().await;
-        data_read
-            .get::<UserInfo>()
-            .expect("Expected UserInfo in TypeMap")
-            .clone()
-    };
-
     {
+        let lock = {
+            let data_read = ctx.data.read().await;
+            data_read
+                .get::<UserInfo>()
+                .expect("Expected UserInfo in TypeMap")
+                .clone()
+        };
+
         lock.write().await.replace(UserInfo {
             icon: ctx
                 .cache
@@ -461,18 +478,22 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
     // Initialize database connections
     let guild_properties = DatabaseConnector::<GuildProperties>::new();
-	let database = FirestoreDb::new(PROJECT)
+    let database = FirestoreDb::new(PROJECT)
         .await
         .expect("Couldn't connect to Firestore");
     let mut transaction = database
         .begin_transaction()
         .await
         .expect("Couldn't start transaction");
-	let mut needs_commit = false;
+    let mut needs_commit = false;
 
     // Update guild nicknames
     let guilds = ctx.cache.guilds();
     for guild in guilds.iter() {
+        if shard_id(*guild, shard_count) != ctx.shard_id.0 {
+            continue;
+        }
+
         if is_free {
             // If the bot is in the free tier, update the nickname immediately
             update_nickname(&ctx, bot_id, guild, &price_text).await;
@@ -573,7 +594,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     );
                     continue;
                 }
-				needs_commit = true;
+                needs_commit = true;
 
                 if in_free_tier || subscription > 0 {
                     added.push(bot_id.0.get().to_string());
@@ -595,14 +616,14 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     // Update global presence
     ctx.set_presence(Some(ActivityData::custom(state)), status);
 
-	// Commit database transaction if necessary
-	if needs_commit {
-		// Commit database transaction
-		let result = transaction.commit().await;
-		if let Err(err) = result {
-			eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
-		}
-	}
+    // Commit database transaction if necessary
+    if needs_commit {
+        // Commit database transaction
+        let result = transaction.commit().await;
+        if let Err(err) = result {
+            eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
+        }
+    }
 
     let duration = start.elapsed();
     println!("[{}]: Updated nicknames in {:?}", bot_id, duration);
@@ -646,7 +667,7 @@ async fn main() {
     let intents = GatewayIntents::GUILDS;
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler {
-            is_loop_running: AtomicBool::new(false),
+            tasks: Arc::new(Mutex::new(HashSet::new())),
         })
         .await
         .expect("Error creating client");
