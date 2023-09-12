@@ -320,7 +320,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
         Ok(response) => response,
         Err(err) => {
             eprintln!(
-                "[{}]: Something went wrong when fetching the price: {}",
+                "[{}]: Something went wrong when making a network request the price: {}",
                 bot_id, err
             );
             return Duration::from_secs(0);
