@@ -296,7 +296,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
     println!(
         "[{}]: Updating nicknames in shard {}/{}",
-        bot_id, ctx.shard_id + 1, shard_count
+        bot_id, ctx.shard_id.0 + 1, shard_count
     );
 
     // Obtain cached request object
