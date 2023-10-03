@@ -294,7 +294,10 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     let shard_count = ctx.cache.as_ref().shard_count();
     let is_free = env::var("IS_FREE").is_ok();
 
-    println!("[{}]: Updating nicknames", bot_id);
+    println!(
+        "[{}]: Updating nicknames in shard {}/{}",
+        bot_id, ctx.shard_id + 1, shard_count
+    );
 
     // Obtain cached request object
     let request = {
