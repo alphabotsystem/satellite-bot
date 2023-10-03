@@ -19,6 +19,8 @@ use serenity::{
 use std::{
     collections::HashSet,
     env,
+    panic::{set_hook, take_hook},
+    process::exit,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -650,6 +652,12 @@ async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, ni
 
 #[tokio::main]
 async fn main() {
+    let default_panic = take_hook();
+    set_hook(Box::new(move |info| {
+        default_panic(info);
+        exit(1);
+    }));
+
     sleep(Duration::from_secs(5)).await;
 
     let mut satellite_id: usize = match env::var("HOSTNAME") {
