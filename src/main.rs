@@ -296,7 +296,9 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
     println!(
         "[{}]: Updating nicknames in shard {}/{}",
-        bot_id, ctx.shard_id.0 + 1, shard_count
+        bot_id,
+        ctx.shard_id.0 + 1,
+        shard_count
     );
 
     // Obtain cached request object
@@ -646,10 +648,28 @@ async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, ni
 
     let result = guild.edit_nickname(ctx.http.as_ref(), Some(nickname)).await;
     if let Err(err) = result {
-        println!(
-            "[{}]: Couldn't update nickname in {}: {:?}",
-            bot_id, guild, err
-        );
+        match err {
+            SerenityError::Http(HttpError::UnsuccessfulRequest(response)) => {
+                if response.error.message == "Missing Permissions" {
+                    println!("[{}]: Leaving {}", bot_id, guild);
+                    let result = guild.leave(ctx.http.as_ref()).await;
+                    if let Err(err) = result {
+                        eprintln!("[{}]: Couldn't leave {}: {:?}", bot_id, guild, err);
+                    }
+                } else {
+                    eprintln!(
+                        "[{}]: Couldn't update nickname in {}: {:?}",
+                        bot_id, guild, response
+                    );
+                }
+            }
+            _ => {
+                eprintln!(
+                    "[{}]: Couldn't update nickname in {}: {:?}",
+                    bot_id, guild, err
+                );
+            }
+        }
     }
 }
 
