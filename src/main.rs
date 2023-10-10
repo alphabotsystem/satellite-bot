@@ -107,7 +107,7 @@ impl EventHandler for Handler {
         }
 
         let bot_id = _ctx.cache.current_user().id;
-        let guild_id = guild.id.0.to_string();
+        let guild_id = guild.id.to_string();
 
         let guild_properties = DatabaseConnector::<GuildProperties>::new();
         let properties = match guild_properties.get(&guild_id, None).await {
@@ -139,7 +139,7 @@ impl EventHandler for Handler {
                 let field = format!("customer.slots.satellites.`{}`.added", guild_id);
                 t.fields([t
                     .field(field)
-                    .append_missing_elements([bot_id.0.get().to_string()])])
+                    .append_missing_elements([bot_id.to_string()])])
             })
             .only_transform()
             .add_to_transaction(&mut transaction)
@@ -153,7 +153,7 @@ impl EventHandler for Handler {
 
     async fn guild_delete(&self, _ctx: Context, guild: UnavailableGuild, _full: Option<Guild>) {
         let bot_id = _ctx.cache.current_user().id;
-        let guild_id = guild.id.0.to_string();
+        let guild_id = guild.id.to_string();
 
         let guild_properties = DatabaseConnector::<GuildProperties>::new();
         let properties = match guild_properties.get(&guild_id, None).await {
@@ -185,7 +185,7 @@ impl EventHandler for Handler {
                 let field = format!("customer.slots.satellites.`{}`.added", guild_id);
                 t.fields([t
                     .field(field)
-                    .remove_all_from_array([bot_id.0.get().to_string()])])
+                    .remove_all_from_array([bot_id.to_string()])])
             })
             .only_transform()
             .add_to_transaction(&mut transaction)
@@ -200,7 +200,7 @@ impl EventHandler for Handler {
 
 async fn update_ticker(ctx: Arc<Context>) {
     let bot_id = ctx.cache.current_user().id;
-    let (platform, exchange, ticker_id) = CONFIGURATION.get(&bot_id.0.get().to_string()).unwrap();
+    let (platform, exchange, ticker_id) = CONFIGURATION.get(&bot_id.to_string()).unwrap();
 
     println!(
         "[{}]: Updating cached request for {}:{}:{}",
@@ -269,7 +269,7 @@ async fn update_properties(ctx: Arc<Context>) {
     let guilds = ctx.cache.guilds();
     let properties = SatelliteProperties {
         count: guilds.len(),
-        servers: guilds.iter().map(|x| x.0.get().to_string()).collect(),
+        servers: guilds.iter().map(|x| x.to_string()).collect(),
         user: user_info,
     };
 
@@ -278,7 +278,7 @@ async fn update_properties(ctx: Arc<Context>) {
         .fluent()
         .update()
         .in_col("satellites")
-        .document_id(bot_id.0.get().to_string())
+        .document_id(bot_id.to_string())
         .object(&properties)
         .execute::<()>()
         .await;
@@ -506,7 +506,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
             update_nickname(&ctx, bot_id, guild, &price_text).await;
         } else {
             // Get guild properties
-            let guild_id = guild.0.get().to_string();
+            let guild_id = guild.to_string();
             let properties = match guild_properties.get(&guild_id, None).await {
                 Some(properties) => properties,
                 None => {
@@ -575,7 +575,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     .added
                     .as_ref()
                     .unwrap()
-                    .contains(&bot_id.0.get().to_string())
+                    .contains(&bot_id.to_string())
             {
                 // We still add the bot id to the server list of bots if it's not there
                 let owner = properties.settings.setup.connection.unwrap();
@@ -589,7 +589,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                         let field = format!("customer.slots.satellites.`{}`.added", guild_id);
                         t.fields([t
                             .field(field)
-                            .append_missing_elements([bot_id.0.get().to_string()])])
+                            .append_missing_elements([bot_id.to_string()])])
                     })
                     .only_transform()
                     .add_to_transaction(&mut transaction);
@@ -604,14 +604,14 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                 needs_commit = true;
 
                 if in_free_tier || subscription > 0 {
-                    added.push(bot_id.0.get().to_string());
+                    added.push(bot_id.to_string());
                 }
             } else if in_free_tier {
                 // If we're in the free tier, add the bot to the local list of all bots in the server
-                added.push(bot_id.0.get().to_string());
+                added.push(bot_id.to_string());
             }
 
-            if added.contains(&bot_id.0.get().to_string()) {
+            if added.contains(&bot_id.to_string()) {
                 // If the bot is in the list of all bots in the server, update the nickname
                 update_nickname(&ctx, bot_id, guild, &price_text).await;
             } else {
