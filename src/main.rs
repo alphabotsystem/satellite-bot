@@ -651,11 +651,11 @@ async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, ni
         match err {
             SerenityError::Http(HttpError::UnsuccessfulRequest(response)) => {
                 if response.error.message == "Missing Permissions" {
-                    println!("[{}]: Leaving {}", bot_id, guild);
-                    let result = guild.leave(ctx.http.as_ref()).await;
-                    if let Err(err) = result {
-                        eprintln!("[{}]: Couldn't leave {}: {:?}", bot_id, guild, err);
-                    }
+                    println!("[{}]: Missing permissions in {}", bot_id, guild);
+                    // let result = guild.leave(ctx.http.as_ref()).await;
+                    // if let Err(err) = result {
+                    //     eprintln!("[{}]: Couldn't leave {}: {:?}", bot_id, guild, err);
+                    // }
                 } else {
                     eprintln!(
                         "[{}]: Couldn't update nickname in {}: {:?}",
