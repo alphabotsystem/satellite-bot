@@ -13,3 +13,5 @@ serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 phf = { version = "*", features = ["macros"] }
 firestore = "*"
+chrono = "*"
+humantime = "*"

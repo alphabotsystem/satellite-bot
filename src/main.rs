@@ -1,10 +1,12 @@
 mod config;
+use chrono::{DateTime, Local, NaiveDate, Utc};
 use config::{
     CONFIGURATION, FREE_THRESHOLD, PRICE_REFRESH_SECONDS, PROJECT, REQUEST_REFRESH_SECONDS,
     SATELLITES,
 };
 use database::{DatabaseConnector, GuildProperties};
 use firestore::*;
+use humantime::format_duration;
 use processor::{process_quote_arguments, process_task};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -137,9 +139,7 @@ impl EventHandler for Handler {
             .document_id(properties.settings.setup.connection.unwrap())
             .transforms(|t| {
                 let field = format!("customer.slots.satellites.`{}`.added", guild_id);
-                t.fields([t
-                    .field(field)
-                    .append_missing_elements([bot_id.to_string()])])
+                t.fields([t.field(field).append_missing_elements([bot_id.to_string()])])
             })
             .only_transform()
             .add_to_transaction(&mut transaction)
@@ -183,9 +183,7 @@ impl EventHandler for Handler {
             .document_id(properties.settings.setup.connection.unwrap())
             .transforms(|t| {
                 let field = format!("customer.slots.satellites.`{}`.added", guild_id);
-                t.fields([t
-                    .field(field)
-                    .remove_all_from_array([bot_id.to_string()])])
+                t.fields([t.field(field).remove_all_from_array([bot_id.to_string()])])
             })
             .only_transform()
             .add_to_transaction(&mut transaction)
@@ -413,6 +411,53 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     .unwrap()
             ),
         ),
+        "Blockchair" => (
+            {
+                let quote = payload
+                    .get("quotePrice")
+                    .expect("Expected quotePrice in payload")
+                    .as_str()
+                    .unwrap();
+
+                let timestamp = quote
+                    .chars()
+                    .skip(5)
+                    .take(10)
+                    .collect::<String>()
+                    .parse::<i64>()
+                    .expect(format!("Couldn't parse timestamp from {}", quote).as_str());
+
+                let now = Local::now();
+                let halving = DateTime::<Utc>::from_timestamp(timestamp, 0).unwrap();
+                let duration: Duration = now.signed_duration_since(halving).to_std().unwrap();
+
+                format_duration(duration).to_string()
+            },
+			{
+				let quote = payload
+                    .get("quotePrice")
+                    .expect("Expected quotePrice in payload")
+                    .as_str()
+                    .unwrap();
+
+                let timestamp = quote
+                    .chars()
+                    .skip(5)
+                    .take(10)
+                    .collect::<String>()
+                    .parse::<i64>()
+                    .expect(format!("Couldn't parse timestamp from {}", quote).as_str());
+
+                let halving = DateTime::<Utc>::from_timestamp(timestamp, 0).unwrap();
+				format!("{} UTC", halving.format("%m %d %Y %H:%M"))
+			},
+            ticker
+                .get("id")
+                .expect("Expected id in ticker")
+                .as_str()
+                .unwrap()
+                .to_string(),
+        ),
         _ => (
             payload
                 .get("quotePrice")
@@ -587,9 +632,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     .document_id(&owner)
                     .transforms(|t| {
                         let field = format!("customer.slots.satellites.`{}`.added", guild_id);
-                        t.fields([t
-                            .field(field)
-                            .append_missing_elements([bot_id.to_string()])])
+                        t.fields([t.field(field).append_missing_elements([bot_id.to_string()])])
                     })
                     .only_transform()
                     .add_to_transaction(&mut transaction);
