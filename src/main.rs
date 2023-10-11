@@ -1,5 +1,5 @@
 mod config;
-use chrono::{DateTime, Local, NaiveDate, Utc};
+use chrono::{DateTime, Local, Utc};
 use config::{
     CONFIGURATION, FREE_THRESHOLD, PRICE_REFRESH_SECONDS, PROJECT, REQUEST_REFRESH_SECONDS,
     SATELLITES,
@@ -198,21 +198,19 @@ impl EventHandler for Handler {
 
 async fn update_ticker(ctx: Arc<Context>) {
     let bot_id = ctx.cache.current_user().id;
-    let (platform, exchange, ticker_id) = CONFIGURATION.get(&bot_id.to_string()).unwrap();
+    let (platform, arguments, ticker_id) = CONFIGURATION.get(&bot_id.to_string()).unwrap();
+
+    let arguments = match arguments {
+        Some(arguments) => arguments.split(" ").collect(),
+        None => vec![],
+    };
 
     println!(
-        "[{}]: Updating cached request for {}:{}:{}",
-        bot_id,
-        platform,
-        exchange.unwrap_or("_"),
-        ticker_id
+        "[{}]: Updating cached request for {}:{} + {:?}",
+        bot_id, platform, ticker_id, arguments
     );
 
     // Make parser request
-    let arguments = match exchange {
-        Some(exchange) => vec![*exchange],
-        None => vec![],
-    };
     let (message, request) =
         process_quote_arguments(arguments, vec![platform], Some(ticker_id)).await;
 
@@ -433,8 +431,8 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
                 format_duration(duration).to_string()
             },
-			{
-				let quote = payload
+            {
+                let quote = payload
                     .get("quotePrice")
                     .expect("Expected quotePrice in payload")
                     .as_str()
@@ -449,8 +447,8 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     .expect(format!("Couldn't parse timestamp from {}", quote).as_str());
 
                 let halving = DateTime::<Utc>::from_timestamp(timestamp, 0).unwrap();
-				format!("{} UTC", halving.format("%m %d %Y %H:%M"))
-			},
+                format!("{} UTC", halving.format("%m %d %Y %H:%M"))
+            },
             ticker
                 .get("id")
                 .expect("Expected id in ticker")
