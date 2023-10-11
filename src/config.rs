@@ -116,5 +116,5 @@ pub static CONFIGURATION: Map<&'static str, (&'static str, Option<&'static str>,
 	"1121112828003238028" => ("Twelvedata", None, "NDX"),
 	"1121112983305715923" => ("Twelvedata", None, "AEX:2"),
 	"1130037256661512242" => ("Twelvedata", None, "HYLN"),
-	"1161623718733299762" => ("Blockchair", None, "BTCUSD"),
+	"1161623718733299762" => ("Blockchair", Some("halving"), "BTCUSD"),
 };
