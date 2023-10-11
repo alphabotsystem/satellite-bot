@@ -6,7 +6,6 @@ use config::{
 };
 use database::{DatabaseConnector, GuildProperties};
 use firestore::*;
-use humantime::format_duration;
 use processor::{process_quote_arguments, process_task};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -428,13 +427,46 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                 let now = Local::now();
                 let halving = DateTime::<Utc>::from_timestamp(timestamp, 0)
                     .expect("Couldn't parse date from timestamp");
-                let duration: Duration = halving
-                    .signed_duration_since(now)
-                    .to_std()
-                    .expect("Couldn't convert Chrono duration to std duration");
+                let duration = halving
+                    .signed_duration_since(now);
 
-                format_duration(duration).to_string()
-            },
+				let years = duration.num_days() / 365;
+				let days = duration.num_days() % 365;
+				let hours = duration.num_hours() % 24;
+				let minutes = duration.num_minutes() % 60;
+
+				if years > 0 {
+					format!(
+						"{} year{} {} day{}",
+						years,
+						if years == 0 { "" } else { "s" },
+						days,
+						if days == 1 { "" } else { "s" },
+					)
+				} else if days > 0 {
+					format!(
+						"{} day{} {} hour{}",
+						days,
+						if days == 1 { "" } else { "s" },
+						hours,
+						if hours == 1 { "" } else { "s" },
+					)
+				} else if hours > 0 {
+					format!(
+						"{} hour{} {} minute{}",
+						hours,
+						if hours == 1 { "" } else { "s" },
+						minutes,
+						if minutes == 1 { "" } else { "s" },
+					)
+				} else {
+					format!(
+						"{} minute{}",
+						minutes,
+						if minutes == 1 { "" } else { "s" },
+					)
+				}
+			},
             {
                 let quote = payload
                     .get("quotePrice")
@@ -452,14 +484,19 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
                 let halving = DateTime::<Utc>::from_timestamp(timestamp, 0)
                     .expect("Couldn't parse date from timestamp");
-                format!("{} UTC", halving.format("%m %d %Y %H:%M"))
+                format!("{} UTC | ", halving.format("%B %d %Y %H:%M"))
             },
-            ticker
-                .get("id")
-                .expect("Expected id in ticker")
-                .as_str()
-                .unwrap()
-                .to_string(),
+            format!(
+                "{} | ",
+                ticker
+                    .get("id")
+                    .expect("Expected id in ticker")
+                    .as_str()
+                    .unwrap()
+                    .split(":")
+					.last()
+					.unwrap()
+            ),
         ),
         _ => (
             payload
