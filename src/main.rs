@@ -426,8 +426,12 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     .expect(format!("Couldn't parse timestamp from {}", quote).as_str());
 
                 let now = Local::now();
-                let halving = DateTime::<Utc>::from_timestamp(timestamp, 0).unwrap();
-                let duration: Duration = now.signed_duration_since(halving).to_std().unwrap();
+                let halving = DateTime::<Utc>::from_timestamp(timestamp, 0)
+                    .expect("Couldn't parse date from timestamp");
+                let duration: Duration = now
+                    .signed_duration_since(halving)
+                    .to_std()
+                    .expect("Couldn't convert Chrono duration to std duration");
 
                 format_duration(duration).to_string()
             },
@@ -446,7 +450,8 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     .parse::<i64>()
                     .expect(format!("Couldn't parse timestamp from {}", quote).as_str());
 
-                let halving = DateTime::<Utc>::from_timestamp(timestamp, 0).unwrap();
+                let halving = DateTime::<Utc>::from_timestamp(timestamp, 0)
+                    .expect("Couldn't parse date from timestamp");
                 format!("{} UTC", halving.format("%m %d %Y %H:%M"))
             },
             ticker
