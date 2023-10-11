@@ -428,8 +428,8 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                 let now = Local::now();
                 let halving = DateTime::<Utc>::from_timestamp(timestamp, 0)
                     .expect("Couldn't parse date from timestamp");
-                let duration: Duration = now
-                    .signed_duration_since(halving)
+                let duration: Duration = halving
+                    .signed_duration_since(now)
                     .to_std()
                     .expect("Couldn't convert Chrono duration to std duration");
 
