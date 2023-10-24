@@ -484,7 +484,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
                 let halving = DateTime::<Utc>::from_timestamp(timestamp, 0)
                     .expect("Couldn't parse date from timestamp");
-                format!("{} UTC | ", halving.format("%B %d %Y %H:%M"))
+                format!("{} UTC | ", halving.format("%B %d %Y at %H:%M"))
             },
             format!(
                 "{} | ",
