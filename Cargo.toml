@@ -7,7 +7,7 @@ edition = "2018"
 database = { git = "https://github.com/alphabotsystem/dependencies" }
 processor = { git = "https://github.com/alphabotsystem/dependencies" }
 serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next" }
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 phf = { version = "*", features = ["macros"] }
