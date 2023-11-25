@@ -317,7 +317,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     };
 
     // Make quote request
-    let response = process_task(request.clone(), "quote", None, None, None).await;
+    let response = process_task(request.clone(), "quote", None, None, None, None).await;
     let data = match response {
         Ok(response) => response,
         Err(err) => {
