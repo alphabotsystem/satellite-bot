@@ -2,7 +2,7 @@ use phf::{phf_map, Map};
 
 pub const PROJECT: &str = "nlc-bot-36685";
 pub const FREE_THRESHOLD: u32 = 10;
-pub const PRICE_REFRESH_SECONDS: u64 = 60 * 2;
+pub const PRICE_REFRESH_SECONDS: u64 = 60;
 pub const REQUEST_REFRESH_SECONDS: u64 = 60 * 15;
 
 pub const SATELLITES: [&str; 98] = [
