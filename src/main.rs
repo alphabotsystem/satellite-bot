@@ -1,9 +1,6 @@
 mod config;
 use chrono::{DateTime, Local, Utc};
-use config::{
-    CONFIGURATION, FREE_THRESHOLD, PRICE_REFRESH_SECONDS, PROJECT, REQUEST_REFRESH_SECONDS,
-    SATELLITES,
-};
+use config::{CONFIGURATION, FREE_THRESHOLD, PROJECT, REQUEST_REFRESH_SECONDS, SATELLITES};
 use database::{DatabaseConnector, GuildProperties};
 use firestore::*;
 use processor::{process_quote_arguments, process_task};
@@ -60,6 +57,17 @@ struct Handler {
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _ctx: Context, ready: Ready) {
+        let platform = CONFIGURATION
+            .get(&_ctx.cache.current_user().id.to_string())
+            .unwrap()
+            .0;
+        let refresh_rate = match platform {
+            "Alternative.me" => Duration::from_secs(60 * 5),
+            "CNN Business" => Duration::from_secs(60 * 5),
+            "CoinGecko" => Duration::from_secs(60 * 2),
+            _ => Duration::from_secs(60),
+        };
+
         if let Some(shard) = ready.shard {
             {
                 let mut tasks = self.tasks.lock().await;
@@ -87,8 +95,8 @@ impl EventHandler for Handler {
             tokio::spawn(async move {
                 loop {
                     let duration = update_nicknames(Arc::clone(&ctx2)).await;
-                    if duration.as_secs() < PRICE_REFRESH_SECONDS {
-                        sleep(Duration::from_secs(PRICE_REFRESH_SECONDS) - duration).await;
+                    if duration < refresh_rate {
+                        sleep(refresh_rate - duration).await;
                     }
                 }
             });
@@ -427,46 +435,41 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                 let now = Local::now();
                 let halving = DateTime::<Utc>::from_timestamp(timestamp, 0)
                     .expect("Couldn't parse date from timestamp");
-                let duration = halving
-                    .signed_duration_since(now);
+                let duration = halving.signed_duration_since(now);
 
-				let years = duration.num_days() / 365;
-				let days = duration.num_days() % 365;
-				let hours = duration.num_hours() % 24;
-				let minutes = duration.num_minutes() % 60;
+                let years = duration.num_days() / 365;
+                let days = duration.num_days() % 365;
+                let hours = duration.num_hours() % 24;
+                let minutes = duration.num_minutes() % 60;
 
-				if years > 0 {
-					format!(
-						"{} year{} {} day{}",
-						years,
-						if years == 0 { "" } else { "s" },
-						days,
-						if days == 1 { "" } else { "s" },
-					)
-				} else if days > 0 {
-					format!(
-						"{} day{} {} hour{}",
-						days,
-						if days == 1 { "" } else { "s" },
-						hours,
-						if hours == 1 { "" } else { "s" },
-					)
-				} else if hours > 0 {
-					format!(
-						"{} hour{} {} minute{}",
-						hours,
-						if hours == 1 { "" } else { "s" },
-						minutes,
-						if minutes == 1 { "" } else { "s" },
-					)
-				} else {
-					format!(
-						"{} minute{}",
-						minutes,
-						if minutes == 1 { "" } else { "s" },
-					)
-				}
-			},
+                if years > 0 {
+                    format!(
+                        "{} year{} {} day{}",
+                        years,
+                        if years == 0 { "" } else { "s" },
+                        days,
+                        if days == 1 { "" } else { "s" },
+                    )
+                } else if days > 0 {
+                    format!(
+                        "{} day{} {} hour{}",
+                        days,
+                        if days == 1 { "" } else { "s" },
+                        hours,
+                        if hours == 1 { "" } else { "s" },
+                    )
+                } else if hours > 0 {
+                    format!(
+                        "{} hour{} {} minute{}",
+                        hours,
+                        if hours == 1 { "" } else { "s" },
+                        minutes,
+                        if minutes == 1 { "" } else { "s" },
+                    )
+                } else {
+                    format!("{} minute{}", minutes, if minutes == 1 { "" } else { "s" },)
+                }
+            },
             {
                 let quote = payload
                     .get("quotePrice")
@@ -494,8 +497,8 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                     .as_str()
                     .unwrap()
                     .split(":")
-					.last()
-					.unwrap()
+                    .last()
+                    .unwrap()
             ),
         ),
         _ => (
