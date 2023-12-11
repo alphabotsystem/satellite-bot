@@ -565,7 +565,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
                 .current_user()
                 .avatar_url()
                 .unwrap_or("".to_string()),
-            name: ctx.cache.current_user().name.clone(),
+            name: ctx.cache.current_user().name.clone().into_string(),
             status: state.clone(),
             price: price_text.clone(),
         });
@@ -585,7 +585,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     // Update guild nicknames
     let guilds = ctx.cache.guilds();
     for guild in guilds.iter() {
-        if shard_id(*guild, shard_count) != ctx.shard_id.0 {
+        if shard_id(*guild, shard_count.get()) != ctx.shard_id.0 {
             continue;
         }
 
@@ -728,7 +728,7 @@ async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, ni
         Some(guild) => guild.members.get(&bot_id).unwrap().nick.clone(),
         None => None,
     };
-    if current_nickname == Some(nickname.to_string()) {
+    if current_nickname.is_some() && current_nickname.unwrap().into_string() == nickname.to_string() {
         return;
     }
 
