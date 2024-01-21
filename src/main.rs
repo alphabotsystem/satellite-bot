@@ -34,9 +34,6 @@ struct UserInfo {
     pub status: String,
     pub price: String,
 }
-impl TypeMapKey for UserInfo {
-    type Value = Arc<RwLock<Option<UserInfo>>>;
-}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct SatelliteProperties {
@@ -45,9 +42,10 @@ struct SatelliteProperties {
     pub user: UserInfo,
 }
 
-struct RequestCache;
-impl TypeMapKey for RequestCache {
-    type Value = Arc<RwLock<Option<Value>>>;
+struct Cache {
+	pub request: RwLock<Option<Value>>,
+	pub user_info: RwLock<Option<UserInfo>>,
+	pub properties: RwLock<Option<SatelliteProperties>>,
 }
 
 struct Handler {
@@ -83,8 +81,8 @@ impl EventHandler for Handler {
             let ctx1 = Arc::clone(&ctx);
             tokio::spawn(async move {
                 loop {
-                    update_ticker(Arc::clone(&ctx1)).await;
-                    update_properties(Arc::clone(&ctx1)).await;
+                    update_ticker(&ctx1).await;
+                    update_properties(&ctx1).await;
                     sleep(Duration::from_secs(REQUEST_REFRESH_SECONDS)).await;
                 }
             });
@@ -94,7 +92,7 @@ impl EventHandler for Handler {
             let ctx2 = Arc::clone(&ctx);
             tokio::spawn(async move {
                 loop {
-                    let duration = update_nicknames(Arc::clone(&ctx2)).await;
+                    let duration = update_nicknames(&ctx2).await;
                     if duration < refresh_rate {
                         sleep(refresh_rate - duration).await;
                     }
@@ -203,7 +201,7 @@ impl EventHandler for Handler {
     }
 }
 
-async fn update_ticker(ctx: Arc<Context>) {
+async fn update_ticker(ctx: &Context) {
     let bot_id = ctx.cache.current_user().id;
     let (platform, arguments, ticker_id) = CONFIGURATION.get(&bot_id.to_string()).unwrap();
 
@@ -229,18 +227,12 @@ async fn update_ticker(ctx: Arc<Context>) {
 
     // Update global cache
     {
-        let lock = {
-            let data_read = ctx.data.read().await;
-            data_read
-                .get::<RequestCache>()
-                .expect("Expected RequestCache in TypeMap")
-                .clone()
-        };
-        lock.write().await.replace(request);
+        let data = ctx.data::<Cache>();
+		data.request.write().await.replace(request);
     }
 }
 
-async fn update_properties(ctx: Arc<Context>) {
+async fn update_properties(ctx: &Context) {
     let bot_id = ctx.cache.current_user().id;
 
     // Initialize database connection
@@ -250,15 +242,9 @@ async fn update_properties(ctx: Arc<Context>) {
 
     // Obtain cached user info object
     let user_info = {
-        let lock = {
-            let data_read = ctx.data.read().await;
-            data_read
-                .get::<UserInfo>()
-                .expect("Expected UserInfo in TypeMap")
-                .clone()
-        };
+        let data = ctx.data::<Cache>();
 
-        let user_info = lock.read().await.clone();
+        let user_info = data.user_info.read().await.clone();
         match user_info {
             Some(user_info) => user_info,
             None => {
@@ -291,7 +277,7 @@ async fn update_properties(ctx: Arc<Context>) {
     }
 }
 
-async fn update_nicknames(ctx: Arc<Context>) -> Duration {
+async fn update_nicknames(ctx: &Context) -> Duration {
     let start = Instant::now();
     let bot_id = ctx.cache.current_user().id;
     let shard_count = ctx.cache.as_ref().shard_count();
@@ -306,15 +292,9 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
     // Obtain cached request object
     let request = {
-        let lock = {
-            let data_read = ctx.data.read().await;
-            data_read
-                .get::<RequestCache>()
-                .expect("Expected RequestCache in TypeMap")
-                .clone()
-        };
+		let data = ctx.data::<Cache>();
 
-        let request = lock.read().await.clone();
+        let request = data.request.read().await.clone();
         match request {
             Some(request) => request,
             None => {
@@ -551,15 +531,9 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
 
     // Update global cache
     {
-        let lock = {
-            let data_read = ctx.data.read().await;
-            data_read
-                .get::<UserInfo>()
-                .expect("Expected UserInfo in TypeMap")
-                .clone()
-        };
+        let data = ctx.data::<Cache>();
 
-        lock.write().await.replace(UserInfo {
+        data.user_info.write().await.replace(UserInfo {
             icon: ctx
                 .cache
                 .current_user()
@@ -723,7 +697,7 @@ async fn update_nicknames(ctx: Arc<Context>) -> Duration {
     return duration;
 }
 
-async fn update_nickname(ctx: &Arc<Context>, bot_id: UserId, guild: &GuildId, nickname: &str) {
+async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nickname: &str) {
     let current_nickname = match guild.to_guild_cached(&ctx.cache) {
         Some(guild) => guild.members.get(&bot_id).unwrap().nick.clone(),
         None => None,
@@ -778,6 +752,12 @@ async fn main() {
         satellite_id += 2;
     }
 
+	let data = Cache {
+		request: RwLock::new(None),
+		user_info: RwLock::new(None),
+		properties: RwLock::new(None),
+	};
+
     let token = env::var(format!("ID_{}", SATELLITES[satellite_id]))
         .expect("Expected a bot token in the environment");
 
@@ -786,14 +766,9 @@ async fn main() {
         .event_handler(Handler {
             tasks: Arc::new(Mutex::new(HashSet::new())),
         })
+		.data(Arc::new(data) as _)
         .await
         .expect("Error creating client");
-
-    {
-        let mut data = client.data.write().await;
-        data.insert::<RequestCache>(Arc::new(RwLock::new(None)));
-        data.insert::<UserInfo>(Arc::new(RwLock::new(None)));
-    }
 
     if let Err(why) = client.start_autosharded().await {
         eprintln!("Client error: {:?}", why);
