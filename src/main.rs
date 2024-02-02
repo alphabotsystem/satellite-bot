@@ -45,7 +45,6 @@ struct SatelliteProperties {
 struct Cache {
 	pub request: RwLock<Option<Value>>,
 	pub user_info: RwLock<Option<UserInfo>>,
-	pub properties: RwLock<Option<SatelliteProperties>>,
 }
 
 struct Handler {
@@ -54,9 +53,9 @@ struct Handler {
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn ready(&self, _ctx: Context, ready: Ready) {
+    async fn ready(&self, ctx: &Context, ready: &Ready) {
         let platform = CONFIGURATION
-            .get(&_ctx.cache.current_user().id.to_string())
+            .get(&ctx.cache.current_user().id.to_string())
             .unwrap()
             .0;
         let refresh_rate = match platform {
@@ -75,10 +74,9 @@ impl EventHandler for Handler {
                 tasks.insert(shard.id);
             }
 
-            _ctx.set_presence(None, OnlineStatus::Idle);
+            ctx.set_presence(None, OnlineStatus::Idle);
 
-            let ctx = Arc::new(_ctx);
-            let ctx1 = Arc::clone(&ctx);
+            let ctx1 = ctx.clone();
             tokio::spawn(async move {
                 loop {
                     update_ticker(&ctx1).await;
@@ -89,7 +87,7 @@ impl EventHandler for Handler {
 
             sleep(Duration::from_secs(5)).await;
 
-            let ctx2 = Arc::clone(&ctx);
+            let ctx2 = ctx.clone();
             tokio::spawn(async move {
                 loop {
                     let duration = update_nicknames(&ctx2).await;
@@ -108,7 +106,7 @@ impl EventHandler for Handler {
         }
     }
 
-    async fn guild_create(&self, _ctx: Context, guild: Guild, _is_new: Option<bool>) {
+    async fn guild_create(&self, _ctx: &Context, guild: &Guild, _is_new: &Option<bool>) {
         if !_is_new.unwrap_or(false) {
             return;
         }
@@ -156,7 +154,7 @@ impl EventHandler for Handler {
             .expect("Couldn't commit transaction");
     }
 
-    async fn guild_delete(&self, _ctx: Context, guild: UnavailableGuild, _full: Option<Guild>) {
+    async fn guild_delete(&self, _ctx: &Context, guild: &UnavailableGuild, _full: &Option<Guild>) {
         let bot_id = _ctx.cache.current_user().id;
         let guild_id = guild.id.to_string();
 
@@ -755,7 +753,6 @@ async fn main() {
 	let data = Cache {
 		request: RwLock::new(None),
 		user_info: RwLock::new(None),
-		properties: RwLock::new(None),
 	};
 
     let token = env::var(format!("ID_{}", SATELLITES[satellite_id]))
