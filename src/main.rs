@@ -557,7 +557,7 @@ async fn update_nicknames(ctx: &Context) -> Duration {
     // Update guild nicknames
     let guilds = ctx.cache.guilds();
     for guild in guilds.iter() {
-        if shard_id(*guild, shard_count.get()) != ctx.shard_id.0 {
+        if shard_id(*guild, shard_count) != ctx.shard_id.0 {
             continue;
         }
 
@@ -704,7 +704,7 @@ async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nicknam
         return;
     }
 
-    let result = guild.edit_nickname(ctx.http.as_ref(), Some(nickname)).await;
+    let result = guild.edit_nickname(ctx.http.as_ref(), Some(nickname), Some("Automatic update to reflect current information")).await;
     if let Err(err) = result {
         match err {
             SerenityError::Http(HttpError::UnsuccessfulRequest(response)) => {
