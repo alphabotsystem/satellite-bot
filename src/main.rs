@@ -769,6 +769,8 @@ async fn main() {
 
 	let mut threads = Vec::new();
 	for id in SATELLITES {
+		sleep(Duration::from_secs(1)).await;
+
 		let tx = tx.clone();
 		threads.push(
 			tokio::spawn(async move {
