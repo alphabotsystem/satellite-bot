@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: satellites
   namespace: alpha-bot
@@ -10,8 +10,6 @@ spec:
   selector:
     matchLabels:
       app: satellites
-  serviceName: "satellite"
-  podManagementPolicy: Parallel
   template:
     metadata:
       labels:
