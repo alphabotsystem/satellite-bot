@@ -280,7 +280,7 @@ async fn update_nicknames(ctx: &Context) -> Duration {
     let start = Instant::now();
     let bot_id = ctx.cache.current_user().id;
     let shard_count = ctx.cache.as_ref().shard_count();
-    let is_free = env::var("IS_FREE").is_ok();
+    let is_free = bot_id.get() == 751080162300526653 || bot_id.get() == 751080770243657779;
 
     println!(
         "[{}]: Updating nicknames in shard {}/{}",
