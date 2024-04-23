@@ -6,7 +6,7 @@ metadata:
   labels:
     app: satellites
 spec:
-  replicas: 103
+  replicas: 1
   selector:
     matchLabels:
       app: satellites
@@ -23,11 +23,21 @@ spec:
         imagePullPolicy: Always
         resources:
           requests:
-            memory: "9Mi"
-            cpu: "2m"
+            memory: "1500Mi"
+            cpu: "300m"
         env:
           - name: PRODUCTION
             value: "1"
+          - name: ID_751080770243657779
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_751080770243657779
+          - name: ID_751080162300526653
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_751080162300526653
           - name: ID_709850457467650138
             valueFrom:
               secretKeyRef:

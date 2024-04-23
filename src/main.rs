@@ -25,6 +25,7 @@ use std::{
 use tokio::{
     sync::{Mutex, RwLock},
     time::sleep,
+	sync::broadcast,
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -731,31 +732,13 @@ async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nicknam
     }
 }
 
-#[tokio::main]
-async fn main() {
-    let default_panic = take_hook();
-    set_hook(Box::new(move |info| {
-        default_panic(info);
-        exit(1);
-    }));
-
-    sleep(Duration::from_secs(5)).await;
-
-    let mut satellite_id: usize = match env::var("HOSTNAME") {
-        Ok(hostname) => hostname.split("-").last().unwrap().parse().unwrap_or(0),
-        Err(_) => 0,
-    };
-
-    if env::var("IS_FREE").is_err() {
-        satellite_id += 2;
-    }
-
+async fn run_bot_with(id: &str, signal: broadcast::Sender<()>) {
 	let data = Cache {
 		request: RwLock::new(None),
 		user_info: RwLock::new(None),
 	};
 
-    let token = env::var(format!("ID_{}", SATELLITES[satellite_id]))
+    let token = env::var(format!("ID_{}", id))
         .expect("Expected a bot token in the environment");
 
     let intents = GatewayIntents::GUILDS;
@@ -770,4 +753,32 @@ async fn main() {
     if let Err(why) = client.start_autosharded().await {
         eprintln!("Client error: {:?}", why);
     }
+
+	signal.send(()).expect("Couldn't send signal");
+}
+
+#[tokio::main]
+async fn main() {
+    let default_panic = take_hook();
+    set_hook(Box::new(move |info| {
+        default_panic(info);
+        exit(1);
+    }));
+
+	let (tx, mut rx) = broadcast::channel(1);
+
+	let mut threads = Vec::new();
+	for id in SATELLITES {
+		let tx = tx.clone();
+		threads.push(
+			tokio::spawn(async move {
+				run_bot_with(id, tx).await;
+			})
+		);
+	}
+
+	rx.recv().await.expect("Couldn't receive exit signal");
+	eprintln!("Something really bad happened");
+
+	sleep(Duration::from_secs(60)).await;
 }
