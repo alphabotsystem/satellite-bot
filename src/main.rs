@@ -54,7 +54,7 @@ struct Handler {
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn ready(&self, ctx: &Context, ready: &Ready) {
+    async fn ready(&self, ctx: Context, ready: Ready) {
         let platform = CONFIGURATION
             .get(&ctx.cache.current_user().id.to_string())
             .unwrap()
@@ -107,7 +107,7 @@ impl EventHandler for Handler {
         }
     }
 
-    async fn guild_create(&self, _ctx: &Context, guild: &Guild, _is_new: &Option<bool>) {
+    async fn guild_create(&self, _ctx: Context, guild: Guild, _is_new: Option<bool>) {
         if !_is_new.unwrap_or(false) {
             return;
         }
@@ -155,7 +155,7 @@ impl EventHandler for Handler {
             .expect("Couldn't commit transaction");
     }
 
-    async fn guild_delete(&self, _ctx: &Context, guild: &UnavailableGuild, _full: &Option<Guild>) {
+    async fn guild_delete(&self, _ctx: Context, guild: UnavailableGuild, _full: Option<Guild>) {
         let bot_id = _ctx.cache.current_user().id;
         let guild_id = guild.id.to_string();
 
