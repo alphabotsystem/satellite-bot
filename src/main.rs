@@ -23,9 +23,9 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::{
+    sync::broadcast,
     sync::{Mutex, RwLock},
     time::sleep,
-	sync::broadcast,
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -44,8 +44,8 @@ struct SatelliteProperties {
 }
 
 struct Cache {
-	pub request: RwLock<Option<Value>>,
-	pub user_info: RwLock<Option<UserInfo>>,
+    pub request: RwLock<Option<Value>>,
+    pub user_info: RwLock<Option<UserInfo>>,
 }
 
 struct Handler {
@@ -128,15 +128,25 @@ impl EventHandler for Handler {
             return;
         }
 
-        let database = FirestoreDb::new(PROJECT)
-            .await
-            .expect("Couldn't connect to Firestore");
-        let mut transaction = database
-            .begin_transaction()
-            .await
-            .expect("Couldn't start transaction");
+        let database = match FirestoreDb::new(PROJECT).await {
+            Ok(database) => database,
+            Err(err) => {
+                eprintln!("[{}]: Couldn't connect to Firestore: {:?}", bot_id, err);
+                return;
+            }
+        };
+        let mut transaction = match database.begin_transaction().await {
+            Ok(transaction) => transaction,
+            Err(err) => {
+                eprintln!(
+                    "[{}]: Couldn't start Firestore transaction: {:?}",
+                    bot_id, err
+                );
+                return;
+            }
+        };
 
-        database
+        let result = database
             .fluent()
             .update()
             .in_col("accounts")
@@ -146,13 +156,22 @@ impl EventHandler for Handler {
                 t.fields([t.field(field).append_missing_elements([bot_id.to_string()])])
             })
             .only_transform()
-            .add_to_transaction(&mut transaction)
-            .expect("Couldn't add update to transaction");
+            .add_to_transaction(&mut transaction);
 
-        transaction
-            .commit()
-            .await
-            .expect("Couldn't commit transaction");
+        match result {
+            Ok(_) => (),
+            Err(err) => {
+                eprintln!("[{}]: Couldn't add bot to {}: {:?}", bot_id, guild_id, err);
+                return;
+            }
+        }
+
+        match transaction.commit().await {
+            Ok(_) => (),
+            Err(err) => {
+                eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
+            }
+        }
     }
 
     async fn guild_delete(&self, _ctx: Context, guild: UnavailableGuild, _full: Option<Guild>) {
@@ -172,15 +191,26 @@ impl EventHandler for Handler {
             return;
         }
 
-        let database = FirestoreDb::new(PROJECT)
-            .await
-            .expect("Couldn't connect to Firestore");
-        let mut transaction = database
-            .begin_transaction()
-            .await
-            .expect("Couldn't start transaction");
+        let database = match FirestoreDb::new(PROJECT).await {
+            Ok(database) => database,
+            Err(err) => {
+                eprintln!("[{}]: Couldn't connect to Firestore: {:?}", bot_id, err);
+                return;
+            }
+        };
 
-        database
+        let mut transaction = match database.begin_transaction().await {
+            Ok(transaction) => transaction,
+            Err(err) => {
+                eprintln!(
+                    "[{}]: Couldn't start Firestore transaction: {:?}",
+                    bot_id, err
+                );
+                return;
+            }
+        };
+
+        let result = database
             .fluent()
             .update()
             .in_col("accounts")
@@ -190,13 +220,25 @@ impl EventHandler for Handler {
                 t.fields([t.field(field).remove_all_from_array([bot_id.to_string()])])
             })
             .only_transform()
-            .add_to_transaction(&mut transaction)
-            .expect("Couldn't add update to transaction");
+            .add_to_transaction(&mut transaction);
 
-        transaction
-            .commit()
-            .await
-            .expect("Couldn't commit transaction");
+        match result {
+            Ok(_) => (),
+            Err(err) => {
+                eprintln!(
+                    "[{}]: Couldn't remove bot from {}: {:?}",
+                    bot_id, guild_id, err
+                );
+                return;
+            }
+        }
+
+        match transaction.commit().await {
+            Ok(_) => (),
+            Err(err) => {
+                eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
+            }
+        }
     }
 }
 
@@ -227,7 +269,7 @@ async fn update_ticker(ctx: &Context) {
     // Update global cache
     {
         let data = ctx.data::<Cache>();
-		data.request.write().await.replace(request);
+        data.request.write().await.replace(request);
     }
 }
 
@@ -235,9 +277,13 @@ async fn update_properties(ctx: &Context) {
     let bot_id = ctx.cache.current_user().id;
 
     // Initialize database connection
-    let database = FirestoreDb::new(PROJECT)
-        .await
-        .expect("Couldn't connect to Firestore");
+    let database = match FirestoreDb::new(PROJECT).await {
+        Ok(database) => database,
+        Err(err) => {
+            eprintln!("[{}]: Couldn't connect to Firestore: {:?}", bot_id, err);
+            return;
+        }
+    };
 
     // Obtain cached user info object
     let user_info = {
@@ -291,7 +337,7 @@ async fn update_nicknames(ctx: &Context) -> Duration {
 
     // Obtain cached request object
     let request = {
-		let data = ctx.data::<Cache>();
+        let data = ctx.data::<Cache>();
 
         let request = data.request.read().await.clone();
         match request {
@@ -546,13 +592,25 @@ async fn update_nicknames(ctx: &Context) -> Duration {
 
     // Initialize database connections
     let guild_properties = DatabaseConnector::<GuildProperties>::new();
-    let database = FirestoreDb::new(PROJECT)
-        .await
-        .expect("Couldn't connect to Firestore");
-    let mut transaction = database
-        .begin_transaction()
-        .await
-        .expect("Couldn't start transaction");
+    let database = match FirestoreDb::new(PROJECT).await {
+        Ok(database) => database,
+        Err(err) => {
+            eprintln!("[{}]: Couldn't connect to Firestore: {:?}", bot_id, err);
+            return start.elapsed();
+        }
+    };
+
+    let mut transaction = match database.begin_transaction().await {
+        Ok(transaction) => transaction,
+        Err(err) => {
+            eprintln!(
+                "[{}]: Couldn't start Firestore transaction: {:?}",
+                bot_id, err
+            );
+            return start.elapsed();
+        }
+    };
+
     let mut needs_commit = false;
 
     // Update guild nicknames
@@ -701,11 +759,18 @@ async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nicknam
         Some(guild) => guild.members.get(&bot_id).unwrap().nick.clone(),
         None => None,
     };
-    if current_nickname.is_some() && current_nickname.unwrap().into_string() == nickname.to_string() {
+    if current_nickname.is_some() && current_nickname.unwrap().into_string() == nickname.to_string()
+    {
         return;
     }
 
-    let result = guild.edit_nickname(ctx.http.as_ref(), Some(nickname), Some("Automatic update to reflect current information")).await;
+    let result = guild
+        .edit_nickname(
+            ctx.http.as_ref(),
+            Some(nickname),
+            Some("Automatic update to reflect current information"),
+        )
+        .await;
     if let Err(err) = result {
         match err {
             SerenityError::Http(HttpError::UnsuccessfulRequest(response)) => {
@@ -733,20 +798,19 @@ async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nicknam
 }
 
 async fn run_bot_with(id: &str, signal: broadcast::Sender<()>) {
-	let data = Cache {
-		request: RwLock::new(None),
-		user_info: RwLock::new(None),
-	};
+    let data = Cache {
+        request: RwLock::new(None),
+        user_info: RwLock::new(None),
+    };
 
-    let token = env::var(format!("ID_{}", id))
-        .expect("Expected a bot token in the environment");
+    let token = env::var(format!("ID_{}", id)).expect("Expected a bot token in the environment");
 
     let intents = GatewayIntents::GUILDS;
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler {
             tasks: Arc::new(Mutex::new(HashSet::new())),
         })
-		.data(Arc::new(data) as _)
+        .data(Arc::new(data) as _)
         .await
         .expect("Error creating client");
 
@@ -754,7 +818,7 @@ async fn run_bot_with(id: &str, signal: broadcast::Sender<()>) {
         eprintln!("Client error: {:?}", why);
     }
 
-	signal.send(()).expect("Couldn't send signal");
+    signal.send(()).expect("Couldn't send signal");
 }
 
 #[tokio::main]
@@ -765,22 +829,20 @@ async fn main() {
         exit(1);
     }));
 
-	let (tx, mut rx) = broadcast::channel(1);
+    let (tx, mut rx) = broadcast::channel(1);
 
-	let mut threads = Vec::new();
-	for id in SATELLITES {
-		sleep(Duration::from_secs(1)).await;
+    let mut threads = Vec::new();
+    for id in SATELLITES {
+        sleep(Duration::from_secs(1)).await;
 
-		let tx = tx.clone();
-		threads.push(
-			tokio::spawn(async move {
-				run_bot_with(id, tx).await;
-			})
-		);
-	}
+        let tx = tx.clone();
+        threads.push(tokio::spawn(async move {
+            run_bot_with(id, tx).await;
+        }));
+    }
 
-	rx.recv().await.expect("Couldn't receive exit signal");
-	eprintln!("Something really bad happened");
+    rx.recv().await.expect("Couldn't receive exit signal");
+    eprintln!("Something really bad happened");
 
-	sleep(Duration::from_secs(60)).await;
+    sleep(Duration::from_secs(60)).await;
 }
