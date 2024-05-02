@@ -773,20 +773,43 @@ async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nicknam
         .await;
     if let Err(err) = result {
         match err {
-            SerenityError::Http(HttpError::UnsuccessfulRequest(response)) => {
-                if response.error.message == "Missing Permissions" {
-                    println!("[{}]: Missing permissions in {}", bot_id, guild);
-                    // let result = guild.leave(ctx.http.as_ref()).await;
-                    // if let Err(err) = result {
-                    //     eprintln!("[{}]: Couldn't leave {}: {:?}", bot_id, guild, err);
-                    // }
-                } else {
-                    eprintln!(
-                        "[{}]: Couldn't update nickname in {}: {:?}",
-                        bot_id, guild, response
-                    );
-                }
-            }
+            SerenityError::Http(err) => {
+				match err {
+					HttpError::UnsuccessfulRequest(response) => {
+						if response.error.message == "Missing Permissions" {
+							println!("[{}]: Missing permissions in {}", bot_id, guild);
+							// let result = guild.leave(ctx.http.as_ref()).await;
+							// if let Err(err) = result {
+							//     eprintln!("[{}]: Couldn't leave {}: {:?}", bot_id, guild, err);
+							// }
+						} else {
+							eprintln!(
+								"[{}]: Request to update nickname in {} failed: {:?}",
+								bot_id, guild, response
+							);
+						}
+					},
+					HttpError::Request(err) => {
+						if !err.is_connect() {
+							println!(
+								"[{}]: Couldn't make HTTP request to update nickname in {}: {:?}",
+								bot_id, guild, err
+							)
+						} else {
+							eprintln!(
+								"[{}]: Couldn't make HTTP request to update nickname in {}: {:?}",
+								bot_id, guild, err
+							);
+						}
+					},
+					_ => {
+						eprintln!(
+							"[{}]: Request to update nickname in {} failed: {:?}",
+							bot_id, guild, err
+						);
+					}
+				}
+            },
             _ => {
                 eprintln!(
                     "[{}]: Couldn't update nickname in {}: {:?}",
