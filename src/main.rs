@@ -782,7 +782,7 @@ async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nicknam
 							// if let Err(err) = result {
 							//     eprintln!("[{}]: Couldn't leave {}: {:?}", bot_id, guild, err);
 							// }
-						} else {
+						} else if !response.status_code.is_server_error() {
 							eprintln!(
 								"[{}]: Request to update nickname in {} failed: {:?}",
 								bot_id, guild, response
