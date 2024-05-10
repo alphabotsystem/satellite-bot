@@ -62,7 +62,8 @@ impl EventHandler for Handler {
         let refresh_rate = match platform {
             "Alternative.me" => Duration::from_secs(60 * 5),
             "CNN Business" => Duration::from_secs(60 * 5),
-            "CoinGecko" => Duration::from_secs(60 * 2),
+            "CoinGecko" => Duration::from_secs(60 * 5),
+            "On-Chain" => Duration::from_secs(60 * 5),
             _ => Duration::from_secs(60),
         };
 
