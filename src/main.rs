@@ -555,7 +555,6 @@ async fn update_nicknames(ctx: &Context) -> Duration {
 					.unwrap()
 			)
         ),
-    };
         _ => (
             payload
                 .get("quotePrice")
