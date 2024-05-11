@@ -527,6 +527,35 @@ async fn update_nicknames(ctx: &Context) -> Duration {
                     .unwrap()
             ),
         ),
+        "On-Chain" => (
+            payload
+                .get("quotePrice")
+                .expect("Expected quotePrice in payload")
+                .as_str()
+                .unwrap()
+                .to_string(),
+            if payload.get("change").is_some() {
+                format!("{} | ", payload.get("change").unwrap().as_str().unwrap())
+            } else {
+                "".to_string()
+            },
+            format!(
+				"{} on {} | ",
+				payload
+					.get("title")
+					.expect("Expected title in payload")
+					.as_str()
+					.unwrap(),
+				ticker
+					.get("exchange")
+					.expect("Expected exchange in ticker")
+					.get("name")
+					.expect("Expected name in exchange")
+					.as_str()
+					.unwrap()
+			)
+        ),
+    };
         _ => (
             payload
                 .get("quotePrice")
