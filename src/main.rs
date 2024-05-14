@@ -658,7 +658,7 @@ async fn update_nicknames(ctx: &Context) -> Duration {
             let properties = match guild_properties.get(&guild_id, None).await {
                 Some(properties) => properties,
                 None => {
-                    println!("[{}]: Couldn't fetch properties for {}", bot_id, guild);
+					update_nickname(&ctx, bot_id, guild, "Alpha.bot not set up").await;
                     continue;
                 }
             };
