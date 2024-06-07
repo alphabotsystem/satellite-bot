@@ -805,7 +805,9 @@ async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nicknam
             SerenityError::Http(err) => {
 				match err {
 					HttpError::UnsuccessfulRequest(response) => {
-						if response.error.message == "Missing Permissions" {
+						if response.status_code == 404 {
+							return
+						} if response.error.message == "Missing Permissions" {
 							println!("[{}]: Missing permissions in {}", bot_id, guild);
 							// let result = guild.leave(ctx.http.as_ref()).await;
 							// if let Err(err) = result {

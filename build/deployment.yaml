@@ -761,5 +761,10 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_1242440601362894880
+          - name: ID_1248640249492541480
+            valueFrom:
+              secretKeyRef:
+                name: alpha-satellite-tokens
+                key: ID_1248640249492541480
         ports:
           - containerPort: 6911
