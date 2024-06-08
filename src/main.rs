@@ -1,6 +1,6 @@
 mod config;
 use chrono::{DateTime, Local, Utc};
-use config::{CONFIGURATION, FREE_THRESHOLD, PROJECT, REQUEST_REFRESH_SECONDS, SATELLITES};
+use config::{CONFIGURATION, FREE_THRESHOLD, PROJECT, REQUEST_REFRESH_SECONDS};
 use database::{DatabaseConnector, GuildProperties};
 use firestore::*;
 use processor::{process_quote_arguments, process_task};
@@ -886,7 +886,7 @@ async fn main() {
     let (tx, mut rx) = broadcast::channel(1);
 
     let mut threads = Vec::new();
-    for id in SATELLITES {
+    for id in CONFIGURATION.keys() {
         sleep(Duration::from_secs(1)).await;
 
         let tx = tx.clone();
