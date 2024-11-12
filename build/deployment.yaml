@@ -691,36 +691,16 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_1213818330591531099
-          - name: ID_1216094733223334028
-            valueFrom:
-              secretKeyRef:
-                name: alpha-satellite-tokens
-                key: ID_1216094733223334028
           - name: ID_1216094587215413368
             valueFrom:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_1216094587215413368
-          - name: ID_1219014344583418009
-            valueFrom:
-              secretKeyRef:
-                name: alpha-satellite-tokens
-                key: ID_1219014344583418009
           - name: ID_1228027269675487232
             valueFrom:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_1228027269675487232
-          - name: ID_1228028031306698834
-            valueFrom:
-              secretKeyRef:
-                name: alpha-satellite-tokens
-                key: ID_1228028031306698834
-          - name: ID_1228029687889133609
-            valueFrom:
-              secretKeyRef:
-                name: alpha-satellite-tokens
-                key: ID_1228029687889133609
           - name: ID_1234096647135559693
             valueFrom:
               secretKeyRef:
@@ -766,11 +746,6 @@ spec:
               secretKeyRef:
                 name: alpha-satellite-tokens
                 key: ID_1248640249492541480
-          - name: ID_1248644191534448690
-            valueFrom:
-              secretKeyRef:
-                name: alpha-satellite-tokens
-                key: ID_1248644191534448690
           - name: ID_1249095722758832138
             valueFrom:
               secretKeyRef:
