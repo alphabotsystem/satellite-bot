@@ -16,7 +16,6 @@ use serenity::{
 };
 use std::{
     collections::HashSet,
-    env,
     panic::{set_hook, take_hook},
     process::exit,
     sync::Arc,
@@ -540,20 +539,20 @@ async fn update_nicknames(ctx: &Context) -> Duration {
                 "".to_string()
             },
             format!(
-				"{} on {} | ",
-				payload
-					.get("title")
-					.expect("Expected title in payload")
-					.as_str()
-					.unwrap(),
-				ticker
-					.get("exchange")
-					.expect("Expected exchange in ticker")
-					.get("name")
-					.expect("Expected name in exchange")
-					.as_str()
-					.unwrap()
-			)
+                "{} on {} | ",
+                payload
+                    .get("title")
+                    .expect("Expected title in payload")
+                    .as_str()
+                    .unwrap(),
+                ticker
+                    .get("exchange")
+                    .expect("Expected exchange in ticker")
+                    .get("name")
+                    .expect("Expected name in exchange")
+                    .as_str()
+                    .unwrap()
+            ),
         ),
         _ => (
             payload
@@ -658,7 +657,7 @@ async fn update_nicknames(ctx: &Context) -> Duration {
             let properties = match guild_properties.get(&guild_id, None).await {
                 Some(properties) => properties,
                 None => {
-					update_nickname(&ctx, bot_id, guild, "Alpha.bot not set up").await;
+                    update_nickname(&ctx, bot_id, guild, "Alpha.bot not set up").await;
                     continue;
                 }
             };
@@ -803,44 +802,45 @@ async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nicknam
     if let Err(err) = result {
         match err {
             SerenityError::Http(err) => {
-				match err {
-					HttpError::UnsuccessfulRequest(response) => {
-						if response.status_code == 404 {
-							return
-						} if response.error.message == "Missing Permissions" {
-							println!("[{}]: Missing permissions in {}", bot_id, guild);
-							// let result = guild.leave(ctx.http.as_ref()).await;
-							// if let Err(err) = result {
-							//     eprintln!("[{}]: Couldn't leave {}: {:?}", bot_id, guild, err);
-							// }
-						} else if !response.status_code.is_server_error() {
-							eprintln!(
-								"[{}]: Request to update nickname in {} failed: {:?}",
-								bot_id, guild, response
-							);
-						}
-					},
-					HttpError::Request(err) => {
-						if !err.is_connect() {
-							println!(
-								"[{}]: Couldn't make HTTP request to update nickname in {}: {:?}",
-								bot_id, guild, err
-							)
-						} else {
-							eprintln!(
-								"[{}]: Couldn't make HTTP request to update nickname in {}: {:?}",
-								bot_id, guild, err
-							);
-						}
-					},
-					_ => {
-						eprintln!(
-							"[{}]: Request to update nickname in {} failed: {:?}",
-							bot_id, guild, err
-						);
-					}
-				}
-            },
+                match err {
+                    HttpError::UnsuccessfulRequest(response) => {
+                        if response.status_code == 404 {
+                            return;
+                        }
+                        if response.error.message == "Missing Permissions" {
+                            println!("[{}]: Missing permissions in {}", bot_id, guild);
+                            // let result = guild.leave(ctx.http.as_ref()).await;
+                            // if let Err(err) = result {
+                            //     eprintln!("[{}]: Couldn't leave {}: {:?}", bot_id, guild, err);
+                            // }
+                        } else if !response.status_code.is_server_error() {
+                            eprintln!(
+                                "[{}]: Request to update nickname in {} failed: {:?}",
+                                bot_id, guild, response
+                            );
+                        }
+                    }
+                    HttpError::Request(err) => {
+                        if !err.is_connect() {
+                            println!(
+                                "[{}]: Couldn't make HTTP request to update nickname in {}: {:?}",
+                                bot_id, guild, err
+                            )
+                        } else {
+                            eprintln!(
+                                "[{}]: Couldn't make HTTP request to update nickname in {}: {:?}",
+                                bot_id, guild, err
+                            );
+                        }
+                    }
+                    _ => {
+                        eprintln!(
+                            "[{}]: Request to update nickname in {} failed: {:?}",
+                            bot_id, guild, err
+                        );
+                    }
+                }
+            }
             _ => {
                 eprintln!(
                     "[{}]: Couldn't update nickname in {}: {:?}",
@@ -857,10 +857,11 @@ async fn run_bot_with(id: &str, signal: broadcast::Sender<()>) {
         user_info: RwLock::new(None),
     };
 
-    let token = env::var(format!("ID_{}", id)).expect("Expected a bot token in the environment");
+    let token =
+        Token::from_env(format!("ID_{}", id)).expect("Expected a bot token in the environment");
 
     let intents = GatewayIntents::GUILDS;
-    let mut client = Client::builder(&token, intents)
+    let mut client = Client::builder(token, intents)
         .event_handler(Handler {
             tasks: Arc::new(Mutex::new(HashSet::new())),
         })
