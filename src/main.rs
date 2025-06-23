@@ -7,10 +7,10 @@ use processor::{process_quote_arguments, process_task};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serenity::{
-    all::{Guild, OnlineStatus, ShardId, UnavailableGuild, UserId},
+    all::{FullEvent, OnlineStatus, ShardId, UserId},
     async_trait,
     gateway::ActivityData,
-    model::{gateway::Ready, id::GuildId},
+    model::id::GuildId,
     prelude::*,
     utils::shard_id,
 };
@@ -53,193 +53,196 @@ struct Handler {
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        let platform = CONFIGURATION
-            .get(&ctx.cache.current_user().id.to_string())
-            .unwrap()
-            .0;
-        let refresh_rate = match platform {
-            "Alternative.me" => Duration::from_secs(60 * 5),
-            "CNN Business" => Duration::from_secs(60 * 5),
-            "CoinGecko" => Duration::from_secs(60 * 5),
-            "On-Chain" => Duration::from_secs(60 * 5),
-            _ => Duration::from_secs(60),
-        };
+	async fn dispatch(&self, ctx: &Context, event: &FullEvent) {
+		match event {
+			FullEvent::Ready { data_about_bot, .. } => {
+				let platform = CONFIGURATION
+					.get(&ctx.cache.current_user().id.to_string())
+					.unwrap()
+					.0;
+				let refresh_rate = match platform {
+					"Alternative.me" => Duration::from_secs(60 * 5),
+					"CNN Business" => Duration::from_secs(60 * 5),
+					"CoinGecko" => Duration::from_secs(60 * 5),
+					"On-Chain" => Duration::from_secs(60 * 5),
+					_ => Duration::from_secs(60),
+				};
 
-        if let Some(shard) = ready.shard {
-            {
-                let mut tasks = self.tasks.lock().await;
-                if tasks.contains(&shard.id) {
-                    return;
-                }
-                tasks.insert(shard.id);
-            }
+				if let Some(shard) = data_about_bot.shard {
+					{
+						let mut tasks = self.tasks.lock().await;
+						if tasks.contains(&shard.id) {
+							return;
+						}
+						tasks.insert(shard.id);
+					}
 
-            ctx.set_presence(None, OnlineStatus::Idle);
+					ctx.set_presence(None, OnlineStatus::Idle);
 
-            let ctx1 = ctx.clone();
-            tokio::spawn(async move {
-                loop {
-                    update_ticker(&ctx1).await;
-                    update_properties(&ctx1).await;
-                    sleep(Duration::from_secs(REQUEST_REFRESH_SECONDS)).await;
-                }
-            });
+					let ctx1 = ctx.clone();
+					tokio::spawn(async move {
+						loop {
+							update_ticker(&ctx1).await;
+							update_properties(&ctx1).await;
+							sleep(Duration::from_secs(REQUEST_REFRESH_SECONDS)).await;
+						}
+					});
 
-            sleep(Duration::from_secs(5)).await;
+					sleep(Duration::from_secs(5)).await;
 
-            let ctx2 = ctx.clone();
-            tokio::spawn(async move {
-                loop {
-                    let duration = update_nicknames(&ctx2).await;
-                    if duration < refresh_rate {
-                        sleep(refresh_rate - duration).await;
-                    }
-                }
-            });
+					let ctx2 = ctx.clone();
+					tokio::spawn(async move {
+						loop {
+							let duration = update_nicknames(&ctx2).await;
+							if duration < refresh_rate {
+								sleep(refresh_rate - duration).await;
+							}
+						}
+					});
 
-            println!(
-                "[Startup]: Alpha.bot Satellite ({}) is online (shard {}/{})",
-                ready.user.id,
-                shard.id.0 + 1,
-                shard.total,
-            );
-        }
-    }
+					println!(
+						"[Startup]: Alpha.bot Satellite ({}) is online (shard {}/{})",
+						data_about_bot.user.id,
+						shard.id.0 + 1,
+						shard.total,
+					);
+				}
+			},
+			FullEvent::GuildCreate { guild, is_new, .. } => {
+				if !is_new.unwrap_or(false) {
+					return;
+				}
 
-    async fn guild_create(&self, _ctx: Context, guild: Guild, _is_new: Option<bool>) {
-        if !_is_new.unwrap_or(false) {
-            return;
-        }
+				let bot_id = ctx.cache.current_user().id;
+				let guild_id = guild.id.to_string();
 
-        let bot_id = _ctx.cache.current_user().id;
-        let guild_id = guild.id.to_string();
+				let guild_properties = DatabaseConnector::<GuildProperties>::new();
+				let properties = match guild_properties.get(&guild_id, None).await {
+					Some(properties) => properties,
+					None => {
+						println!("[{}]: Couldn't fetch properties for {}", bot_id, guild_id);
+						return;
+					}
+				};
 
-        let guild_properties = DatabaseConnector::<GuildProperties>::new();
-        let properties = match guild_properties.get(&guild_id, None).await {
-            Some(properties) => properties,
-            None => {
-                println!("[{}]: Couldn't fetch properties for {}", bot_id, guild_id);
-                return;
-            }
-        };
+				if properties.connection.is_none() {
+					return;
+				}
 
-        if properties.connection.is_none() {
-            return;
-        }
+				let database = match FirestoreDb::new(PROJECT).await {
+					Ok(database) => database,
+					Err(err) => {
+						eprintln!("[{}]: Couldn't connect to Firestore: {:?}", bot_id, err);
+						return;
+					}
+				};
+				let mut transaction = match database.begin_transaction().await {
+					Ok(transaction) => transaction,
+					Err(err) => {
+						eprintln!(
+							"[{}]: Couldn't start Firestore transaction: {:?}",
+							bot_id, err
+						);
+						return;
+					}
+				};
 
-        let database = match FirestoreDb::new(PROJECT).await {
-            Ok(database) => database,
-            Err(err) => {
-                eprintln!("[{}]: Couldn't connect to Firestore: {:?}", bot_id, err);
-                return;
-            }
-        };
-        let mut transaction = match database.begin_transaction().await {
-            Ok(transaction) => transaction,
-            Err(err) => {
-                eprintln!(
-                    "[{}]: Couldn't start Firestore transaction: {:?}",
-                    bot_id, err
-                );
-                return;
-            }
-        };
+				let result = database
+					.fluent()
+					.update()
+					.in_col("accounts")
+					.document_id(properties.settings.setup.connection.unwrap())
+					.transforms(|t| {
+						let field = format!("customer.slots.satellites.`{}`.added", guild_id);
+						t.fields([t.field(field).append_missing_elements([bot_id.to_string()])])
+					})
+					.only_transform()
+					.add_to_transaction(&mut transaction);
 
-        let result = database
-            .fluent()
-            .update()
-            .in_col("accounts")
-            .document_id(properties.settings.setup.connection.unwrap())
-            .transforms(|t| {
-                let field = format!("customer.slots.satellites.`{}`.added", guild_id);
-                t.fields([t.field(field).append_missing_elements([bot_id.to_string()])])
-            })
-            .only_transform()
-            .add_to_transaction(&mut transaction);
+				match result {
+					Ok(_) => (),
+					Err(err) => {
+						eprintln!("[{}]: Couldn't add bot to {}: {:?}", bot_id, guild_id, err);
+						return;
+					}
+				}
 
-        match result {
-            Ok(_) => (),
-            Err(err) => {
-                eprintln!("[{}]: Couldn't add bot to {}: {:?}", bot_id, guild_id, err);
-                return;
-            }
-        }
+				match transaction.commit().await {
+					Ok(_) => (),
+					Err(err) => {
+						eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
+					}
+				}
+			},
+			FullEvent::GuildDelete { incomplete, .. } => {
+				let bot_id = ctx.cache.current_user().id;
+				let guild_id = incomplete.id.to_string();
 
-        match transaction.commit().await {
-            Ok(_) => (),
-            Err(err) => {
-                eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
-            }
-        }
-    }
+				let guild_properties = DatabaseConnector::<GuildProperties>::new();
+				let properties = match guild_properties.get(&guild_id, None).await {
+					Some(properties) => properties,
+					None => {
+						println!("[{}]: Couldn't fetch properties for {}", bot_id, guild_id);
+						return;
+					}
+				};
 
-    async fn guild_delete(&self, _ctx: Context, guild: UnavailableGuild, _full: Option<Guild>) {
-        let bot_id = _ctx.cache.current_user().id;
-        let guild_id = guild.id.to_string();
+				if properties.connection.is_none() {
+					return;
+				}
 
-        let guild_properties = DatabaseConnector::<GuildProperties>::new();
-        let properties = match guild_properties.get(&guild_id, None).await {
-            Some(properties) => properties,
-            None => {
-                println!("[{}]: Couldn't fetch properties for {}", bot_id, guild_id);
-                return;
-            }
-        };
+				let database = match FirestoreDb::new(PROJECT).await {
+					Ok(database) => database,
+					Err(err) => {
+						eprintln!("[{}]: Couldn't connect to Firestore: {:?}", bot_id, err);
+						return;
+					}
+				};
 
-        if properties.connection.is_none() {
-            return;
-        }
+				let mut transaction = match database.begin_transaction().await {
+					Ok(transaction) => transaction,
+					Err(err) => {
+						eprintln!(
+							"[{}]: Couldn't start Firestore transaction: {:?}",
+							bot_id, err
+						);
+						return;
+					}
+				};
 
-        let database = match FirestoreDb::new(PROJECT).await {
-            Ok(database) => database,
-            Err(err) => {
-                eprintln!("[{}]: Couldn't connect to Firestore: {:?}", bot_id, err);
-                return;
-            }
-        };
+				let result = database
+					.fluent()
+					.update()
+					.in_col("accounts")
+					.document_id(properties.settings.setup.connection.unwrap())
+					.transforms(|t| {
+						let field = format!("customer.slots.satellites.`{}`.added", guild_id);
+						t.fields([t.field(field).remove_all_from_array([bot_id.to_string()])])
+					})
+					.only_transform()
+					.add_to_transaction(&mut transaction);
 
-        let mut transaction = match database.begin_transaction().await {
-            Ok(transaction) => transaction,
-            Err(err) => {
-                eprintln!(
-                    "[{}]: Couldn't start Firestore transaction: {:?}",
-                    bot_id, err
-                );
-                return;
-            }
-        };
+				match result {
+					Ok(_) => (),
+					Err(err) => {
+						eprintln!(
+							"[{}]: Couldn't remove bot from {}: {:?}",
+							bot_id, guild_id, err
+						);
+						return;
+					}
+				}
 
-        let result = database
-            .fluent()
-            .update()
-            .in_col("accounts")
-            .document_id(properties.settings.setup.connection.unwrap())
-            .transforms(|t| {
-                let field = format!("customer.slots.satellites.`{}`.added", guild_id);
-                t.fields([t.field(field).remove_all_from_array([bot_id.to_string()])])
-            })
-            .only_transform()
-            .add_to_transaction(&mut transaction);
-
-        match result {
-            Ok(_) => (),
-            Err(err) => {
-                eprintln!(
-                    "[{}]: Couldn't remove bot from {}: {:?}",
-                    bot_id, guild_id, err
-                );
-                return;
-            }
-        }
-
-        match transaction.commit().await {
-            Ok(_) => (),
-            Err(err) => {
-                eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
-            }
-        }
-    }
+				match transaction.commit().await {
+					Ok(_) => (),
+					Err(err) => {
+						eprintln!("[{}]: Couldn't commit transaction: {:?}", bot_id, err);
+					}
+				}
+			}
+			_ => return
+		}
+	}
 }
 
 async fn update_ticker(ctx: &Context) {
