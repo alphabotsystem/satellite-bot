@@ -116,4 +116,5 @@ pub static CONFIGURATION: Map<&'static str, (&'static str, Option<&'static str>,
 	"1335639269657804881" => ("CoinGecko", None, "DSOLUSD"),
 	"1430243472643719209" => ("CCXT", Some("binance"), "PENGUUSDT"),
 	"1438866334602494034" => ("CoinGecko", None, "BATUSD"),
+	"1446465138923405382" => ("CoinGecko", None, "XVGUSD"),
 };
