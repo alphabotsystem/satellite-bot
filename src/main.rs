@@ -9,12 +9,14 @@ use serde_json::Value;
 use serenity::{
     all::{FullEvent, OnlineStatus, ShardId, UserId},
     async_trait,
+    builder::EditCurrentMember,
     gateway::ActivityData,
     model::id::GuildId,
     prelude::*,
     utils::shard_id,
 };
 use std::{
+    borrow::Cow,
     collections::HashSet,
     panic::{set_hook, take_hook},
     process::exit,
@@ -795,13 +797,10 @@ async fn update_nickname(ctx: &Context, bot_id: UserId, guild: &GuildId, nicknam
         return;
     }
 
-    let result = guild
-        .edit_nickname(
-            ctx.http.as_ref(),
-            Some(nickname),
-            Some("Automatic update to reflect current information"),
-        )
-        .await;
+    let builder = EditCurrentMember::new()
+        .nickname(Some(Cow::Borrowed(nickname)))
+        .audit_log_reason("Automatic update to reflect current information");
+    let result = guild.edit_current_member(ctx.http.as_ref(), builder).await;
     if let Err(err) = result {
         match err {
             SerenityError::Http(err) => {
@@ -865,9 +864,9 @@ async fn run_bot_with(id: &str, signal: broadcast::Sender<()>) {
 
     let intents = GatewayIntents::GUILDS;
     let mut client = Client::builder(token, intents)
-        .event_handler(Handler {
+        .event_handler(Arc::new(Handler {
             tasks: Arc::new(Mutex::new(HashSet::new())),
-        })
+        }))
         .data(Arc::new(data) as _)
         .await
         .expect("Error creating client");
